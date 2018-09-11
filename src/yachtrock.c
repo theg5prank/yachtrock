@@ -3,6 +3,46 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+struct opened_testsuite
+{
+  struct result_callbacks saved_result_callbacks;
+  yr_test_suite_t suite;
+  size_t num_cases;
+  yr_test_case_s *cases;
+};
+
+struct opened_testsuite open_suite(yr_test_suite_t suite, struct result_callbacks callbacks)
+{
+  struct opened_testsuite collection;
+  collection.saved_result_callbacks = yr_set_result_callbacks(callbacks);
+  collection.suite = suite;
+  collection.num_cases = suite->num_cases;
+  collection.cases = suite->cases;
+  if ( suite->setup_suite ) {
+    suite->setup_suite(suite);
+  }
+  return collection;
+}
+
+void close_opened_suite(struct opened_testsuite opened_suite)
+{
+  if ( opened_suite.suite->teardown_suite ) {
+    opened_suite.suite->teardown_suite(opened_suite.suite);
+  }
+  yr_set_result_callbacks(opened_suite.saved_result_callbacks);
+}
+
+void execute_case(yr_test_case_s testcase)
+{
+  if ( testcase.suite->setup_case ) {
+    testcase.suite->setup_case(testcase);
+  }
+  testcase.testcase(testcase);
+  if ( testcase.suite->teardown_case ) {
+    testcase.suite->teardown_case(testcase);
+  }
+}
+
 static void basic_run_suite_note_assertion_failed(const char *assertion, const char *file,
                                                   size_t line, const char *funname,
                                                   const char *s, va_list ap, void *refcon)
@@ -25,16 +65,16 @@ int yr_basic_run_suite(yr_test_suite_t suite)
   struct result_callbacks callbacks = {0};
   callbacks.refcon = &test_ok;
   callbacks.note_assertion_failed = basic_run_suite_note_assertion_failed;
-  struct result_callbacks old = yr_set_result_callbacks(callbacks);
-  for ( size_t i = 0; i < suite->num_cases; i++ ) {
-    yr_test_case_s testcase = suite->cases[i];
+  struct opened_testsuite opened = open_suite(suite, callbacks);
+  for ( size_t i = 0; i < opened.num_cases; i++ ) {
+    yr_test_case_s testcase = opened.cases[i];
     fprintf(stderr, "running test %s... ", testcase.name);
-    testcase.testcase(testcase);
+    execute_case(testcase);
     fprintf(stderr, "%s\n", test_ok ? "[OK]" : "[FAIL]");
     suite_ok = suite_ok && test_ok;
     test_ok = true;
   }
   fprintf(stderr, "finished test suite %s\n", suite->name);
-  yr_set_result_callbacks(old);
+  close_opened_suite(opened);
   return suite_ok ? 0 : 1;
 }
