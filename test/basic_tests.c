@@ -63,7 +63,7 @@ void test_suite_and_case_setups_run_pt2(yr_test_case_s testcase)
   ((struct setup_teardown_test_data *)testcase.suite->refcon)->num_cases_run++;
 }
 
-void do_test_basics_setups_teardowns(void)
+void do_test_basics_setups_teardowns(yr_test_case_s tc)
 {
   struct setup_teardown_test_data data;
   memset(&data, 0, sizeof(data));
@@ -82,15 +82,15 @@ void do_test_basics_setups_teardowns(void)
   suite->cases[1].testcase = test_suite_and_case_setups_run_pt2;
   suite->cases[1].suite = suite;
   yr_basic_run_suite(suite);
-  assert(data.case_setups_run == 2);
-  assert(data.case_teardowns_run == 2);
-  assert(data.suite_setups_run == 1);
-  assert(data.suite_teardowns_run == 1);
-  assert(data.num_cases_run == 2);
+  YR_ASSERT(data.case_setups_run == 2, "case setups run wrong");
+  YR_ASSERT(data.case_teardowns_run == 2, "case teardowns run wrong");
+  YR_ASSERT(data.suite_setups_run == 1, "suite setups run wrong");
+  YR_ASSERT(data.suite_teardowns_run == 1, "suite teardowns run wrong");
+  YR_ASSERT(data.num_cases_run == 2, "num cases run wrong");
   free(suite);
 }
 
-void do_test_basics_suite_from_functions(void)
+void do_test_basics_suite_from_functions(yr_test_case_s tc)
 {
   struct setup_teardown_test_data data;
   memset(&data, 0, sizeof(data));
@@ -105,11 +105,11 @@ void do_test_basics_suite_from_functions(void)
                                                          test_suite_and_case_setups_run_pt1, test_suite_and_case_setups_run_pt2);
   suite->refcon = &data;
   yr_basic_run_suite(suite);
-  assert(data.case_setups_run == 2);
-  assert(data.case_teardowns_run == 2);
-  assert(data.suite_setups_run == 1);
-  assert(data.suite_teardowns_run == 1);
-  assert(data.num_cases_run == 2);
+  YR_ASSERT(data.case_setups_run == 2, "case setups run wrong");
+  YR_ASSERT(data.case_teardowns_run == 2, "case teardowns run wrong");
+  YR_ASSERT(data.suite_setups_run == 1, "suite setups run wrong");
+  YR_ASSERT(data.suite_teardowns_run == 1, "suite teardowns run wrong");
+  YR_ASSERT(data.num_cases_run == 2, "num cases run wrong");
 
   free(suite);
 
@@ -118,30 +118,27 @@ void do_test_basics_suite_from_functions(void)
   memset(&data, 0, sizeof(data));
   suite->refcon = &data;
   yr_basic_run_suite(suite);
-  assert(data.case_setups_run == 1);
-  assert(data.case_teardowns_run == 1);
-  assert(data.suite_setups_run == 1);
-  assert(data.suite_teardowns_run == 1);
-  assert(data.num_cases_run == 1);
+  YR_ASSERT(data.case_setups_run == 1, "case setups run wrong");
+  YR_ASSERT(data.case_teardowns_run == 1, "case teardowns run wrong");
+  YR_ASSERT(data.suite_setups_run == 1, "suite setups run wrong");
+  YR_ASSERT(data.suite_teardowns_run == 1, "suite teardowns run wrong");
+  YR_ASSERT(data.num_cases_run == 1, "num cases run wrong");
 
   free(suite);
 }
 
-void test_failures(void)
+void do_test_failures(yr_test_case_s tc)
 {
   yr_test_suite_t suite = yr_create_blank_suite(1);
   suite->name = "Basic test";
   suite->refcon = NULL;
   suite->cases[0].name = "test_basic_assert_failure";
   suite->cases[0].testcase = test_basic_assert_failure;
-  if ( yr_basic_run_suite(suite) != 1 ) {
-    fprintf(stderr, "test unexpectedly passed!\n");
-    abort();
-  }
+  YR_ASSERT(yr_basic_run_suite(suite) == 1, "test should have failed!");
   free(suite);
 }
 
-void test_refcon(void)
+void do_test_refcon(yr_test_case_s tc)
 {
   yr_test_suite_t suite = yr_create_blank_suite(1);
   suite->name = "Test of refcon";
@@ -149,18 +146,19 @@ void test_refcon(void)
   suite->refcon = &two;
   suite->cases[0].name = "test_basic_assert_passes_refcon";
   suite->cases[0].testcase = test_basic_assert_passes_refcon;
-  if ( yr_basic_run_suite(suite) == 1 ) {
-    fprintf(stderr, "test unexpectedly failed!\n");
-    abort();
-  }
+  YR_ASSERT(yr_basic_run_suite(suite) == 0, "test should have passed!");
   free(suite);
 }
 
 int main(void)
 {
-  test_failures();
-  test_refcon();
-  do_test_basics_setups_teardowns();
-  do_test_basics_suite_from_functions();
+  yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", NULL,
+                                                         do_test_failures, do_test_refcon,
+                                                         do_test_basics_setups_teardowns,
+                                                         do_test_basics_suite_from_functions);
+  if ( yr_basic_run_suite(suite) ) {
+    fprintf(stderr, "some tests failed!\n");
+    return EXIT_FAILURE;
+  }
   return 0;
 }
