@@ -102,3 +102,14 @@ _yr_create_suite_from_functions(const char *name,
 
   return suite;
 }
+
+yr_test_suite_t
+yr_create_blank_suite(size_t num_cases)
+{
+  yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * num_cases, 1);
+  suite->num_cases = num_cases;
+  for ( size_t i = 0; i < num_cases; i++ ) {
+    suite->cases[i].suite = suite;
+  }
+  return suite;
+}

@@ -47,4 +47,11 @@ _yr_create_suite_from_functions(const char *name,
 #define yr_create_suite_from_functions(name, lifecycle_callbacks, ...)  \
   _yr_create_suite_from_functions(name, lifecycle_callbacks, # __VA_ARGS__, __VA_ARGS__)
 
+/* Create a blank suite on the heap that you have to fill out.
+ * It has the right number of cases that have the suite pointers in the cases set correctly.
+ * Everything else is zeroed out. This is the "escape hatch", really.
+ */
+YACHTROCK_EXTERN yr_test_suite_t
+yr_create_blank_suite(size_t num_cases);
+
 #endif
