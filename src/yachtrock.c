@@ -18,28 +18,28 @@ struct opened_testsuite open_suite(yr_test_suite_t suite, struct result_callback
   collection.suite = suite;
   collection.num_cases = suite->num_cases;
   collection.cases = suite->cases;
-  if ( suite->setup_suite ) {
-    suite->setup_suite(suite);
+  if ( suite->lifecycle.setup_suite ) {
+    suite->lifecycle.setup_suite(suite);
   }
   return collection;
 }
 
 void close_opened_suite(struct opened_testsuite opened_suite)
 {
-  if ( opened_suite.suite->teardown_suite ) {
-    opened_suite.suite->teardown_suite(opened_suite.suite);
+  if ( opened_suite.suite->lifecycle.teardown_suite ) {
+    opened_suite.suite->lifecycle.teardown_suite(opened_suite.suite);
   }
   yr_set_result_callbacks(opened_suite.saved_result_callbacks);
 }
 
 void execute_case(yr_test_case_s testcase)
 {
-  if ( testcase.suite->setup_case ) {
-    testcase.suite->setup_case(testcase);
+  if ( testcase.suite->lifecycle.setup_case ) {
+    testcase.suite->lifecycle.setup_case(testcase);
   }
   testcase.testcase(testcase);
-  if ( testcase.suite->teardown_case ) {
-    testcase.suite->teardown_case(testcase);
+  if ( testcase.suite->lifecycle.teardown_case ) {
+    testcase.suite->lifecycle.teardown_case(testcase);
   }
 }
 

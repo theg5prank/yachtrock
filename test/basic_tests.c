@@ -71,10 +71,10 @@ void do_test_basics_setups_teardowns(void)
   suite->name = "Basic setup/teardown test";
   suite->refcon = &data;
   suite->num_cases = 2;
-  suite->setup_case = setup_test_case_setup;
-  suite->teardown_case = setup_test_case_teardown;
-  suite->setup_suite = setup_test_suite_setup;
-  suite->teardown_suite = setup_test_suite_teardown;
+  suite->lifecycle.setup_case = setup_test_case_setup;
+  suite->lifecycle.teardown_case = setup_test_case_teardown;
+  suite->lifecycle.setup_suite = setup_test_suite_setup;
+  suite->lifecycle.teardown_suite = setup_test_suite_teardown;
   suite->cases[0].name = "test_suite_and_case_setups_run_pt1";
   suite->cases[0].testcase = test_suite_and_case_setups_run_pt1;
   suite->cases[0].suite = suite;
@@ -87,6 +87,44 @@ void do_test_basics_setups_teardowns(void)
   assert(data.suite_setups_run == 1);
   assert(data.suite_teardowns_run == 1);
   assert(data.num_cases_run == 2);
+  free(suite);
+}
+
+void do_test_basics_suite_from_functions(void)
+{
+  struct setup_teardown_test_data data;
+  memset(&data, 0, sizeof(data));
+  struct yr_suite_lifecycle_callbacks callbacks;
+
+  callbacks.setup_case = setup_test_case_setup;
+  callbacks.teardown_case = setup_test_case_teardown;
+  callbacks.setup_suite = setup_test_suite_setup;
+  callbacks.teardown_suite = setup_test_suite_teardown;
+  
+  yr_test_suite_t suite = yr_create_suite_from_functions(__FUNCTION__, &callbacks,
+                                                         test_suite_and_case_setups_run_pt1, test_suite_and_case_setups_run_pt2);
+  suite->refcon = &data;
+  yr_basic_run_suite(suite);
+  assert(data.case_setups_run == 2);
+  assert(data.case_teardowns_run == 2);
+  assert(data.suite_setups_run == 1);
+  assert(data.suite_teardowns_run == 1);
+  assert(data.num_cases_run == 2);
+
+  free(suite);
+
+  suite = yr_create_suite_from_functions(__FUNCTION__, &callbacks,
+                                         test_suite_and_case_setups_run_pt1);
+  memset(&data, 0, sizeof(data));
+  suite->refcon = &data;
+  yr_basic_run_suite(suite);
+  assert(data.case_setups_run == 1);
+  assert(data.case_teardowns_run == 1);
+  assert(data.suite_setups_run == 1);
+  assert(data.suite_teardowns_run == 1);
+  assert(data.num_cases_run == 1);
+
+  free(suite);
 }
 
 int main(void)
@@ -113,7 +151,9 @@ int main(void)
     fprintf(stderr, "test unexpectedly failed!\n");
     abort();
   }
+  free(suite);
 
   do_test_basics_setups_teardowns();
+  do_test_basics_suite_from_functions();
   return 0;
 }
