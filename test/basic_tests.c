@@ -127,7 +127,7 @@ void do_test_basics_suite_from_functions(void)
   free(suite);
 }
 
-int main(void)
+void test_failures(void)
 {
   yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * 1, 1);
   suite->name = "Basic test";
@@ -141,18 +141,29 @@ int main(void)
     fprintf(stderr, "test unexpectedly passed!\n");
     abort();
   }
+  free(suite);
+}
 
+void test_refcon(void)
+{
+  yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * 1, 1);
   suite->name = "Test of refcon";
-  int two = 2;
+    int two = 2;
   suite->refcon = &two;
   suite->cases[0].name = "test_basic_assert_passes_refcon";
   suite->cases[0].testcase = test_basic_assert_passes_refcon;
+  suite->cases[0].suite = suite;
   if ( yr_basic_run_suite(suite) == 1 ) {
     fprintf(stderr, "test unexpectedly failed!\n");
     abort();
   }
   free(suite);
+}
 
+int main(void)
+{
+  test_failures();
+  test_refcon();
   do_test_basics_setups_teardowns();
   do_test_basics_suite_from_functions();
   return 0;
