@@ -130,9 +130,9 @@ void yr_result_store_close(yr_result_store_t store)
     any_failed = any_failed || store->subresults[i]->result == YR_RESULT_FAILED;
   }
   if ( any_failed ) {
-    store->result = YR_RESULT_FAILED;
+    yr_result_store_record_result(store, YR_RESULT_FAILED);
   } else if ( store->result == YR_RESULT_UNSET ) {
-    store->result = YR_RESULT_PASSED;
+    yr_result_store_record_result(store, YR_RESULT_PASSED);
   }
   store->open = false;
   CALL_HOOK(store, store_closed);
