@@ -35,7 +35,7 @@ struct yr_test_suite {
   void *refcon;
   struct yr_suite_lifecycle_callbacks lifecycle;
   size_t num_cases;
-  yr_test_case_s cases[0];
+  yr_test_case_s cases[];
 };
 
 

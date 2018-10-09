@@ -3,9 +3,9 @@
 
 #include <yachtrock/runtime.h>
 
-#define YR_ASSERT(test, s, ...) do {                                    \
+#define YR_ASSERT(test, ...) do {                                       \
     if ( !(test) ) {                                                    \
-      yr_fail_assertion(#test, __FILE__, __LINE__, __FUNCTION__, (s), ##__VA_ARGS__); \
+      yr_fail_assertion(#test, __FILE__, __LINE__, __FUNCTION__, "" __VA_ARGS__); \
     }                                                                   \
   } while (0)
 

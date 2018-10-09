@@ -15,26 +15,26 @@ MODULE_CLEANS += clean_libyachtrock
 
 LIBYACHTROCK_GENERATED_SRC := 
 LIBYACHTROCK_GENERATED_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_GENERATED_SRC))
-LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c
+LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c
 LIBYACHTROCK_STATIC_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_STATIC_SRC))
 LIBYACHTROCK_SRC := $(LIBYACHTROCK_STATIC_SRC) $(LIBYACHTROCK_GENERATED_SRC)
 LIBYACHTROCK_HEADER_SOURCES := $(wildcard $(LIBYACHTROCK_DIR)public_headers/yachtrock/*.h)
 LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers,$(PREFIX)/include,$(LIBYACHTROCK_HEADER_SOURCES))
 
-LIBYACHTROCK_TESTSRC := basic_tests.c
+LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c
 LIBYACHTROCK_TESTSRC := $(patsubst %,$(LIBYACHTROCK_DIR)test/%,$(LIBYACHTROCK_TESTSRC))
 CSRC += $(LIBYACHTROCK_SRC)
 CSRC += $(LIBYACHTROCK_TESTSRC)
 LIBYACHTROCK_OBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_SRC)))
 LIBYACHTROCK_TESTOBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_TESTSRC)))
 LIBYACHTROCK_TESTS = $(patsubst %.o,%,$(LIBYACHTROCK_TESTOBJ))
-LIBYACHTROCK_LINKS = -lpthread
+LIBYACHTROCK_LINKS =
 
 $(LIBYACHTROCK_STATIC_SRC): $(LIBYACHTROCK_GENERATED_SRC)
 
 $(LIBYACHTROCK_OBJ): CFLAGS += -fPIC
 
-test_libyachtrock: test_libyachtrock_basic
+test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store
 
 test_libyachtrock_%: libyachtrock_%_tests_success
 	true
