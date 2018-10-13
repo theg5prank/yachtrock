@@ -14,8 +14,8 @@ struct opened_testsuite
   yr_result_store_t current_case_store;
 };
 
-struct opened_testsuite *open_suite(yr_test_suite_t suite, struct result_callbacks callbacks,
-                                    struct yr_result_hooks result_hooks, void *result_refcon)
+static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct result_callbacks callbacks,
+                                           struct yr_result_hooks result_hooks, void *result_refcon)
 {
   struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
   collection->saved_result_callbacks = yr_set_result_callbacks(callbacks);
@@ -30,7 +30,7 @@ struct opened_testsuite *open_suite(yr_test_suite_t suite, struct result_callbac
   return collection;
 }
 
-void close_opened_suite(struct opened_testsuite *opened_suite)
+static void close_opened_suite(struct opened_testsuite *opened_suite)
 {
   yr_result_store_close(opened_suite->store);
   if ( opened_suite->suite->lifecycle.teardown_suite ) {
@@ -38,12 +38,12 @@ void close_opened_suite(struct opened_testsuite *opened_suite)
   }
   yr_set_result_callbacks(opened_suite->saved_result_callbacks);
 }
-void destroy_opened_suite(struct opened_testsuite *opened_suite)
+static void destroy_opened_suite(struct opened_testsuite *opened_suite)
 {
   yr_result_store_destroy(opened_suite->store);
   free(opened_suite);
 }
-void execute_case(struct opened_testsuite *opened_suite, yr_test_case_s testcase)
+static void execute_case(struct opened_testsuite *opened_suite, yr_test_case_s testcase)
 {
   opened_suite->current_case_store = yr_result_store_open_subresult(opened_suite->store, testcase.name);
   if ( testcase.suite->lifecycle.setup_case ) {
@@ -72,15 +72,13 @@ static void basic_run_suite_note_assertion_failed(const char *assertion, const c
   char desc[necessary];
   vsnprintf(desc, sizeof(desc), s, ap);
   fprintf(stderr, "Assertion \"%s\" failed: %s:%zu (in %s): %s\n", assertion, file, line, funname, desc);
-  yr_result_store_record_result(((struct basic_run_suite_runtime_context *)refcon)->suite->current_case_store,
-                                YR_RESULT_FAILED);
 }
 
 
 struct basic_result_store_hooks_refcon
 {
 };
-void yr_basic_store_opened_callback(yr_result_store_t store, void *refcon)
+static void yr_basic_store_opened_callback(yr_result_store_t store, void *refcon)
 {
   if ( yr_result_store_get_parent(store) == NULL ) {
     fprintf(stderr, "opening test suite %s\n", yr_result_store_get_name(store));
@@ -88,7 +86,7 @@ void yr_basic_store_opened_callback(yr_result_store_t store, void *refcon)
     fprintf(stderr, "running test %s... ", yr_result_store_get_name(store));
   }
 }
-void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon)
+static void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon)
 {
   if ( yr_result_store_get_parent(store) == NULL ) {
     fprintf(stderr, "finished test suite %s\n", yr_result_store_get_name(store));
@@ -114,17 +112,48 @@ void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon)
 
 int yr_basic_run_suite(yr_test_suite_t suite)
 {
-  struct result_callbacks callbacks = {0};
-  struct basic_run_suite_runtime_context runtime_context = {0};
-  callbacks.refcon = &runtime_context;
-  callbacks.note_assertion_failed = basic_run_suite_note_assertion_failed;
   struct yr_result_hooks basic_hooks = {
     .store_opened = yr_basic_store_opened_callback,
-    .store_closed = yr_basic_store_closed_callback
+    .store_closed = yr_basic_store_closed_callback,
   };
-  struct basic_result_store_hooks_refcon refcon;
-  struct opened_testsuite *opened = open_suite(suite, callbacks, basic_hooks, &refcon);
+  struct basic_result_store_hooks_refcon store_hooks_context;
+  return yr_run_suite_with_result_hooks(suite, basic_hooks, &store_hooks_context,
+                                        basic_run_suite_note_assertion_failed, NULL);
+}
+
+struct run_suite_with_result_hooks_runtime_context
+{
+  struct opened_testsuite *suite;
+  yr_assertion_failure_callback assertion_failed_callback;
+  void *assertion_failed_refcon;
+};
+
+static void yr_run_suite_with_result_hooks_assertion_callback(const char *assertion, const char *file,
+                                                              size_t line, const char *funname,
+                                                              const char *s, va_list ap, void *refcon)
+{
+  struct run_suite_with_result_hooks_runtime_context *context = refcon;
+  if ( context->assertion_failed_callback ) {
+    context->assertion_failed_callback(assertion, file, line, funname, s, ap,
+                                       context->assertion_failed_refcon);
+  }
+  yr_result_store_record_result(context->suite->current_case_store,
+                                YR_RESULT_FAILED);
+}
+
+int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
+                                   void *result_hook_refcon,
+                                   yr_assertion_failure_callback assertion_failed,
+                                   void *assertion_failed_refcon)
+{
+  struct result_callbacks result_callbacks = {0};
+  struct run_suite_with_result_hooks_runtime_context runtime_context;
+  result_callbacks.refcon = &runtime_context;
+  result_callbacks.note_assertion_failed = yr_run_suite_with_result_hooks_assertion_callback;
+  struct opened_testsuite *opened = open_suite(suite, result_callbacks, hooks, result_hook_refcon);
   runtime_context.suite = opened;
+  runtime_context.assertion_failed_callback = assertion_failed;
+  runtime_context.assertion_failed_refcon = assertion_failed_refcon;
   for ( size_t i = 0; i < opened->num_cases; i++ ) {
     execute_case(opened, opened->cases[i]);
   }
