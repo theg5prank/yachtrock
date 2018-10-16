@@ -150,12 +150,26 @@ void do_test_refcon(yr_test_case_s tc)
   free(suite);
 }
 
+void test_skip_dummy(yr_test_case_s tc)
+{
+  YR_SKIP_AND_RETURN("forgot to frob the widget.");
+  abort();
+}
+void do_test_skip_basics(yr_test_case_s tc)
+{
+  yr_test_suite_t suite = yr_create_suite_from_functions("skip basics subtest", NULL,
+                                                         test_skip_dummy);
+  YR_ASSERT(yr_basic_run_suite(suite) == 0);
+  free(suite);
+}
+
 int main(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", NULL,
                                                          do_test_failures, do_test_refcon,
                                                          do_test_basics_setups_teardowns,
-                                                         do_test_basics_suite_from_functions);
+                                                         do_test_basics_suite_from_functions,
+                                                         do_test_skip_basics);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;
