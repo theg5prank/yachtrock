@@ -8,7 +8,9 @@ else
 LIBYACHTROCK_DYLIBNAME := libyachtrock.so
 endif
 
-PRODUCTS += $(LIBYACHTROCK_DYLIBNAME)
+LIBYACHTROCK_ARNAME := libyachtrock.a
+
+PRODUCTS += $(LIBYACHTROCK_DYLIBNAME) $(LIBYACHTROCK_ARNAME)
 TESTS += test_libyachtrock
 
 MODULE_CLEANS += clean_libyachtrock
@@ -42,13 +44,13 @@ test_libyachtrock_%: libyachtrock_%_tests_success
 libyachtrock_%_tests_success: $(LIBYACHTROCK_DIR)test/%_tests
 	./$<
 
-$(LIBYACHTROCK_DIR)test/%_tests: $(LIBYACHTROCK_DIR)test/%_tests.o libyachtrock.a
+$(LIBYACHTROCK_DIR)test/%_tests: $(LIBYACHTROCK_DIR)test/%_tests.o $(LIBYACHTROCK_ARNAME)
 	cc $^ $(LIBYACHTROCK_LINKS) -o $@
 
 # without this the test binaries themselves are considered intermediaries and are removed
 .SECONDARY: $(LIBYACHTROCK_TESTS)
 
-libyachtrock.a: $(LIBYACHTROCK_OBJ)
+$(LIBYACHTROCK_ARNAME): $(LIBYACHTROCK_OBJ)
 	ar rc $@ $(LIBYACHTROCK_OBJ)
 	ranlib $@
 
@@ -61,7 +63,7 @@ $(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_OBJ)
 endif
 
 clean_libyachtrock:
-	rm -f libyachtrock.a
+	rm -f $(LIBYACHTROCK_ARNAME)
 	rm -f $(LIBYACHTROCK_DYLIBNAME)
 	rm -f $(LIBYACHTROCK_OBJ)
 	rm -f $(LIBYACHTROCK_TESTOBJ)
