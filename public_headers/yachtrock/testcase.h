@@ -23,7 +23,7 @@ typedef void (*yr_test_suite_teardown_function)(yr_test_suite_t suite);
 struct yr_test_case {
   const char *name;
   yr_test_case_function testcase;
-  struct yr_test_suite *suite;
+  const struct yr_test_suite *suite;
 };
 
 struct yr_suite_lifecycle_callbacks {
