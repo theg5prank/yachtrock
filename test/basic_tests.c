@@ -163,13 +163,25 @@ void do_test_skip_basics(yr_test_case_s tc)
   free(suite);
 }
 
+YR_TESTCASE(test_case_decl_name_only)
+{
+  YR_ASSERT(strlen(testcase.name) > 0);
+}
+
+YR_TESTCASE(test_case_decl_with_name, tc)
+{
+  YR_ASSERT(strlen(tc.name) > 0);
+}
+
 int main(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", NULL,
                                                          do_test_failures, do_test_refcon,
                                                          do_test_basics_setups_teardowns,
                                                          do_test_basics_suite_from_functions,
-                                                         do_test_skip_basics);
+                                                         do_test_skip_basics,
+                                                         test_case_decl_name_only,
+                                                         test_case_decl_with_name);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;
