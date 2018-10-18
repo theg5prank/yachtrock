@@ -212,5 +212,6 @@ int main(void)
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;
   }
+  free(suite);
   return 0;
 }
