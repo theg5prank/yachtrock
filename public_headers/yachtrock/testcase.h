@@ -10,15 +10,16 @@ typedef struct yr_test_suite yr_test_suite_s;
 typedef yr_test_suite_s *yr_test_suite_t;
 struct yr_test_case;
 typedef struct yr_test_case yr_test_case_s;
+typedef const yr_test_case_s *yr_test_case_t;
 
-typedef void (*yr_test_case_function)(yr_test_case_s testcase);
-typedef void (*yr_test_case_setup_function)(yr_test_case_s testcase);
-typedef void (*yr_test_case_teardown_function)(yr_test_case_s testcase);
+typedef void (*yr_test_case_function)(yr_test_case_t testcase);
+typedef void (*yr_test_case_setup_function)(yr_test_case_t testcase);
+typedef void (*yr_test_case_teardown_function)(yr_test_case_t testcase);
 typedef void (*yr_test_suite_setup_function)(yr_test_suite_t suite);
 typedef void (*yr_test_suite_teardown_function)(yr_test_suite_t suite);
 
 #define __YR_DEVARIADICIFY_2(dummy, A, ...) A
-#define YR_TESTCASE(name, ...) void name(yr_test_case_s __YR_DEVARIADICIFY_2(dummy, ##__VA_ARGS__ , testcase) )
+#define YR_TESTCASE(name, ...) void name(yr_test_case_t __YR_DEVARIADICIFY_2(dummy, ##__VA_ARGS__ , testcase) )
 
 struct yr_test_case {
   const char *name;

@@ -7,20 +7,20 @@ struct result_store_test_context
 {
   yr_result_store_t store;
 };
-void result_store_case_setup(yr_test_case_s testcase)
+void result_store_case_setup(yr_test_case_t testcase)
 {
-  ((struct result_store_test_context *)(testcase.suite->refcon))->store =
-    yr_result_store_create(testcase.name);
+  ((struct result_store_test_context *)(testcase->suite->refcon))->store =
+    yr_result_store_create(testcase->name);
 }
-void result_store_case_teardown(yr_test_case_s testcase)
+void result_store_case_teardown(yr_test_case_t testcase)
 {
-  struct result_store_test_context *test_context = (struct result_store_test_context *)(testcase.suite->refcon);
+  struct result_store_test_context *test_context = (struct result_store_test_context *)(testcase->suite->refcon);
   yr_result_store_destroy(test_context->store);
   test_context->store = NULL;
 }
-#define GETSTORE(testcase) ((struct result_store_test_context *)(testcase).suite->refcon)->store
+#define GETSTORE(testcase) ((struct result_store_test_context *)(testcase)->suite->refcon)->store
 
-void test_closing_store_passes(yr_test_case_s testcase)
+void test_closing_store_passes(yr_test_case_t testcase)
 {
   yr_result_store_t store = yr_result_store_create("fun things");
   YR_ASSERT(yr_result_store_get_result(store) == YR_RESULT_UNSET, "newly create should be unset");
@@ -29,7 +29,7 @@ void test_closing_store_passes(yr_test_case_s testcase)
   yr_result_store_destroy(store);
 }
 
-void test_failing_subresult_fails_parent(yr_test_case_s testcase)
+void test_failing_subresult_fails_parent(yr_test_case_t testcase)
 {
   yr_result_store_t store = yr_result_store_create("fun stuff!!");
   yr_result_store_t subresult = yr_result_store_open_subresult(store, "subtest");
@@ -40,7 +40,7 @@ void test_failing_subresult_fails_parent(yr_test_case_s testcase)
   yr_result_store_destroy(store);
 }
 
-void test_no_unfailing(yr_test_case_s testcase)
+void test_no_unfailing(yr_test_case_t testcase)
 {
   yr_result_store_t store = yr_result_store_create("fun stuff!!");
   yr_result_store_record_result(store, YR_RESULT_FAILED);
@@ -50,7 +50,7 @@ void test_no_unfailing(yr_test_case_s testcase)
   yr_result_store_destroy(store);
 }
 
-void test_unpassing(yr_test_case_s testcase)
+void test_unpassing(yr_test_case_t testcase)
 {
   yr_result_store_t store = yr_result_store_create("fun stuff!!");
   yr_result_store_record_result(store, YR_RESULT_PASSED);
@@ -60,7 +60,7 @@ void test_unpassing(yr_test_case_s testcase)
   yr_result_store_destroy(store);
 }
 
-void test_skips_basics(yr_test_case_s testcase)
+void test_skips_basics(yr_test_case_t testcase)
 {
   yr_result_store_t subresult = yr_result_store_open_subresult(GETSTORE(testcase), "subresult");
   yr_result_store_record_result(subresult, YR_RESULT_SKIPPED);
@@ -71,7 +71,7 @@ void test_skips_basics(yr_test_case_s testcase)
   YR_ASSERT(yr_result_store_get_result(GETSTORE(testcase)) == YR_RESULT_PASSED);
 }
 
-void test_getters(yr_test_case_s testcase)
+void test_getters(yr_test_case_t testcase)
 {
   yr_result_store_t subresult = yr_result_store_open_subresult(GETSTORE(testcase), "subresult");
   YR_ASSERT(yr_result_store_get_parent(subresult) == GETSTORE(testcase));
@@ -101,7 +101,7 @@ void enumerator_for_test(yr_result_store_t subresult, void *refcon)
   const char *realname = yr_result_store_get_name(subresult);
   YR_ASSERT(strcmp(realname, expected_name) == 0, "expected %s to be %s", realname, expected_name);
 }
-void test_enumeration(yr_test_case_s testcase)
+void test_enumeration(yr_test_case_t testcase)
 {
   yr_result_store_t subresult = yr_result_store_open_subresult(GETSTORE(testcase), "subresult");
   yr_result_store_open_subresult(subresult, "store1");

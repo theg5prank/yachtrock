@@ -43,15 +43,15 @@ static void destroy_opened_suite(struct opened_testsuite *opened_suite)
   yr_result_store_destroy(opened_suite->store);
   free(opened_suite);
 }
-static void execute_case(struct opened_testsuite *opened_suite, yr_test_case_s testcase)
+static void execute_case(struct opened_testsuite *opened_suite, yr_test_case_t testcase)
 {
-  opened_suite->current_case_store = yr_result_store_open_subresult(opened_suite->store, testcase.name);
-  if ( testcase.suite->lifecycle.setup_case ) {
-    testcase.suite->lifecycle.setup_case(testcase);
+  opened_suite->current_case_store = yr_result_store_open_subresult(opened_suite->store, testcase->name);
+  if ( testcase->suite->lifecycle.setup_case ) {
+    testcase->suite->lifecycle.setup_case(testcase);
   }
-  testcase.testcase(testcase);
-  if ( testcase.suite->lifecycle.teardown_case ) {
-    testcase.suite->lifecycle.teardown_case(testcase);
+  testcase->testcase(testcase);
+  if ( testcase->suite->lifecycle.teardown_case ) {
+    testcase->suite->lifecycle.teardown_case(testcase);
   }
   yr_result_store_close(opened_suite->current_case_store);
   opened_suite->current_case_store = NULL;
@@ -177,7 +177,7 @@ int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks
   runtime_context.suite = opened;
   runtime_context.provided_result_callbacks = provided_result_callbacks;
   for ( size_t i = 0; i < opened->num_cases; i++ ) {
-    execute_case(opened, opened->cases[i]);
+    execute_case(opened, &(opened->cases[i]));
   }
   close_opened_suite(opened);
   bool success = yr_result_store_get_result(opened->store) == YR_RESULT_PASSED;

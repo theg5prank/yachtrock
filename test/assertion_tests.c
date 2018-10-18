@@ -3,17 +3,17 @@
 #include <stdlib.h>
 
 #define PASSING_TEST_CASE(name, fun, ...)       \
-  static void name(yr_test_case_s tc)           \
+  static void name(yr_test_case_t tc)           \
   {                                             \
     fun(__VA_ARGS__);                           \
   }
 
 #define FAILING_TEST_CASE(name, fun, ...)                               \
-  static void __failing_test__ ## name(yr_test_case_s tc)               \
+  static void __failing_test__ ## name(yr_test_case_t tc)               \
   {                                                                     \
     fun(__VA_ARGS__);                                                   \
   }                                                                     \
-  static void name(yr_test_case_s tc)                                   \
+  static void name(yr_test_case_t tc)                                   \
   {                                                                     \
     yr_test_suite_t suite = yr_create_suite_from_functions(#name " (intentionally failing suite)", \
                                                            NULL,        \

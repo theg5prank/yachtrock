@@ -4,14 +4,14 @@
 #include <string.h>
 #include <assert.h>
 
-void test_basic_assert_failure(yr_test_case_s testcase)
+void test_basic_assert_failure(yr_test_case_t testcase)
 {
   YR_ASSERT(1 == 2, "expected one to equal two, but it was: %d (pssst: this is a dummy failure)", 1);
 }
 
-void test_basic_assert_passes_refcon(yr_test_case_s testcase)
+void test_basic_assert_passes_refcon(yr_test_case_t testcase)
 {
-  YR_ASSERT(*(int *)testcase.suite->refcon == 2, "suite refcon should be set");
+  YR_ASSERT(*(int *)testcase->suite->refcon == 2, "suite refcon should be set");
 }
 
 struct setup_teardown_test_data
@@ -30,40 +30,40 @@ void setup_test_suite_teardown(yr_test_suite_t suite)
 {
   ((struct setup_teardown_test_data *)suite->refcon)->suite_teardowns_run++;
 }
-void setup_test_case_setup(yr_test_case_s testcase)
+void setup_test_case_setup(yr_test_case_t testcase)
 {
-  ((struct setup_teardown_test_data *)testcase.suite->refcon)->case_setups_run++;
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run++;
 }
-void setup_test_case_teardown(yr_test_case_s testcase)
+void setup_test_case_teardown(yr_test_case_t testcase)
 {
-  ((struct setup_teardown_test_data *)testcase.suite->refcon)->case_teardowns_run++;
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run++;
 }
-void test_suite_and_case_setups_run_pt1(yr_test_case_s testcase)
+void test_suite_and_case_setups_run_pt1(yr_test_case_t testcase)
 {
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->case_setups_run == 1,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run == 1,
             "case setup should be run one time now");
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->case_teardowns_run == 0,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run == 0,
             "case teardown should be run zero times now");
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->suite_setups_run == 1,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_setups_run == 1,
             "suite setup should be run one time now");
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->suite_teardowns_run == 0,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_teardowns_run == 0,
             "suite teardown should be run zero times now");
-  ((struct setup_teardown_test_data *)testcase.suite->refcon)->num_cases_run++;
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->num_cases_run++;
 }
-void test_suite_and_case_setups_run_pt2(yr_test_case_s testcase)
+void test_suite_and_case_setups_run_pt2(yr_test_case_t testcase)
 {
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->case_setups_run == 2,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run == 2,
             "case setup should be run one time now");
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->case_teardowns_run == 1,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run == 1,
             "case teardown should be run zero times now");
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->suite_setups_run == 1,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_setups_run == 1,
             "suite setup should be run one time now");
-  YR_ASSERT(((struct setup_teardown_test_data *)testcase.suite->refcon)->suite_teardowns_run == 0,
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_teardowns_run == 0,
             "suite teardown should be run zero times now");
-  ((struct setup_teardown_test_data *)testcase.suite->refcon)->num_cases_run++;
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->num_cases_run++;
 }
 
-void do_test_basics_setups_teardowns(yr_test_case_s tc)
+void do_test_basics_setups_teardowns(yr_test_case_t tc)
 {
   struct setup_teardown_test_data data;
   memset(&data, 0, sizeof(data));
@@ -90,7 +90,7 @@ void do_test_basics_setups_teardowns(yr_test_case_s tc)
   free(suite);
 }
 
-void do_test_basics_suite_from_functions(yr_test_case_s tc)
+void do_test_basics_suite_from_functions(yr_test_case_t tc)
 {
   struct setup_teardown_test_data data;
   memset(&data, 0, sizeof(data));
@@ -127,7 +127,7 @@ void do_test_basics_suite_from_functions(yr_test_case_s tc)
   free(suite);
 }
 
-void do_test_failures(yr_test_case_s tc)
+void do_test_failures(yr_test_case_t tc)
 {
   yr_test_suite_t suite = yr_create_blank_suite(1);
   suite->name = "Basic test";
@@ -138,7 +138,7 @@ void do_test_failures(yr_test_case_s tc)
   free(suite);
 }
 
-void do_test_refcon(yr_test_case_s tc)
+void do_test_refcon(yr_test_case_t tc)
 {
   yr_test_suite_t suite = yr_create_blank_suite(1);
   suite->name = "Test of refcon";
@@ -150,12 +150,12 @@ void do_test_refcon(yr_test_case_s tc)
   free(suite);
 }
 
-void test_skip_dummy(yr_test_case_s tc)
+void test_skip_dummy(yr_test_case_t tc)
 {
   YR_SKIP_AND_RETURN("forgot to frob the widget.");
   abort();
 }
-void do_test_skip_basics(yr_test_case_s tc)
+void do_test_skip_basics(yr_test_case_t tc)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("skip basics subtest", NULL,
                                                          test_skip_dummy);
@@ -165,12 +165,12 @@ void do_test_skip_basics(yr_test_case_s tc)
 
 YR_TESTCASE(test_case_decl_name_only)
 {
-  YR_ASSERT(strlen(testcase.name) > 0);
+  YR_ASSERT(strlen(testcase->name) > 0);
 }
 
 YR_TESTCASE(test_case_decl_with_name, tc)
 {
-  YR_ASSERT(strlen(tc.name) > 0);
+  YR_ASSERT(strlen(tc->name) > 0);
 }
 
 int main(void)
