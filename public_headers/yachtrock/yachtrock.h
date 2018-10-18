@@ -10,6 +10,6 @@ YACHTROCK_EXTERN int yr_basic_run_suite(yr_test_suite_t suite);
 YACHTROCK_EXTERN int yr_run_suite_with_result_hooks(yr_test_suite_t suite,
                                                     struct yr_result_hooks hooks,
                                                     void *result_hook_refcon,
-                                                    struct result_callbacks result_callbacks);
+                                                    struct yr_result_callbacks result_callbacks);
 
 #endif

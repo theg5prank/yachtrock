@@ -6,7 +6,7 @@
 
 struct opened_testsuite
 {
-  struct result_callbacks saved_result_callbacks;
+  struct yr_result_callbacks saved_result_callbacks;
   yr_test_suite_t suite;
   size_t num_cases;
   yr_test_case_s *cases;
@@ -14,7 +14,7 @@ struct opened_testsuite
   yr_result_store_t current_case_store;
 };
 
-static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct result_callbacks callbacks,
+static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct yr_result_callbacks callbacks,
                                            struct yr_result_hooks result_hooks, void *result_refcon)
 {
   struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
@@ -120,7 +120,7 @@ static void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon
 
 int yr_basic_run_suite(yr_test_suite_t suite)
 {
-  struct result_callbacks result_callbacks = {
+  struct yr_result_callbacks result_callbacks = {
     .note_assertion_failed = basic_run_suite_note_assertion_failed,
     .note_skipped = basic_run_suite_note_skipped,
     .refcon = NULL,
@@ -137,7 +137,7 @@ int yr_basic_run_suite(yr_test_suite_t suite)
 struct run_suite_with_result_hooks_runtime_context
 {
   struct opened_testsuite *suite;
-  struct result_callbacks provided_result_callbacks;
+  struct yr_result_callbacks provided_result_callbacks;
 };
 
 static void yr_run_suite_with_result_hooks_assertion_callback(const char *assertion, const char *file,
@@ -166,9 +166,9 @@ static void yr_run_suite_with_result_hooks_skipped_callback(const char *file, si
 
 int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
                                    void *result_hook_refcon,
-                                   struct result_callbacks provided_result_callbacks)
+                                   struct yr_result_callbacks provided_result_callbacks)
 {
-  struct result_callbacks result_callbacks = {0};
+  struct yr_result_callbacks result_callbacks = {0};
   struct run_suite_with_result_hooks_runtime_context runtime_context;
   result_callbacks.refcon = &runtime_context;
   result_callbacks.note_assertion_failed = yr_run_suite_with_result_hooks_assertion_callback;

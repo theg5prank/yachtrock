@@ -11,14 +11,14 @@ typedef void (*yr_test_skipped_callback)(const char *file, size_t line, const ch
                                          const char *reason, va_list ap, void *refcon);
 
 // callbacks
-struct result_callbacks
+struct yr_result_callbacks
 {
   void *refcon;
   yr_assertion_failure_callback note_assertion_failed;
   yr_test_skipped_callback note_skipped;
 };
 
-YACHTROCK_EXTERN struct result_callbacks yr_set_result_callbacks(struct result_callbacks callbacks);
+YACHTROCK_EXTERN struct yr_result_callbacks yr_set_result_callbacks(struct yr_result_callbacks callbacks);
 
 
 YACHTROCK_EXTERN void yr_fail_assertion(const char *assertion, const char *file, size_t line,

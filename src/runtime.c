@@ -17,13 +17,13 @@ static void beartrap_note_test_skipped(const char *file, size_t line, const char
   abort();
 }
 
-struct result_callbacks current_callbacks = {
+struct yr_result_callbacks current_callbacks = {
   .refcon = NULL,
   .note_assertion_failed = beartrap_note_assertion_failed,
   .note_skipped = beartrap_note_test_skipped,
 };
 
-static void validate_callbacks(struct result_callbacks callbacks)
+static void validate_callbacks(struct yr_result_callbacks callbacks)
 {
   if ( callbacks.note_assertion_failed == NULL ) {
     fprintf(stderr, "assertion failure handler cannot be NULL\n");
@@ -35,10 +35,10 @@ static void validate_callbacks(struct result_callbacks callbacks)
   }
 }
 
-struct result_callbacks yr_set_result_callbacks(struct result_callbacks callbacks)
+struct yr_result_callbacks yr_set_result_callbacks(struct yr_result_callbacks callbacks)
 {
   validate_callbacks(callbacks);
-  struct result_callbacks old = current_callbacks;
+  struct yr_result_callbacks old = current_callbacks;
   current_callbacks = callbacks;
   return old;
 }
