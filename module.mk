@@ -23,7 +23,7 @@ LIBYACHTROCK_SRC := $(LIBYACHTROCK_STATIC_SRC) $(LIBYACHTROCK_GENERATED_SRC)
 LIBYACHTROCK_HEADER_SOURCES := $(wildcard $(LIBYACHTROCK_DIR)public_headers/yachtrock/*.h)
 LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers,$(PREFIX)/include,$(LIBYACHTROCK_HEADER_SOURCES))
 
-LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c
+LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c
 LIBYACHTROCK_TESTSRC := $(patsubst %,$(LIBYACHTROCK_DIR)test/%,$(LIBYACHTROCK_TESTSRC))
 CSRC += $(LIBYACHTROCK_SRC)
 CSRC += $(LIBYACHTROCK_TESTSRC)
@@ -36,7 +36,7 @@ $(LIBYACHTROCK_STATIC_SRC): $(LIBYACHTROCK_GENERATED_SRC)
 
 $(LIBYACHTROCK_OBJ): CFLAGS += -fPIC
 
-test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion
+test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase
 
 test_libyachtrock_%: libyachtrock_%_tests_success
 	true

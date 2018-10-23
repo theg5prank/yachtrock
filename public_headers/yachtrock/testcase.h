@@ -42,7 +42,6 @@ struct yr_test_suite {
   yr_test_case_s cases[];
 };
 
-
 YACHTROCK_EXTERN yr_test_suite_t
 _yr_create_suite_from_functions(const char *name,
                                 struct yr_suite_lifecycle_callbacks *callbacks,
@@ -57,5 +56,16 @@ _yr_create_suite_from_functions(const char *name,
  */
 YACHTROCK_EXTERN yr_test_suite_t
 yr_create_blank_suite(size_t num_cases);
+
+struct yr_test_suite_collection {
+  size_t num_suites;
+  // note: storage in the same allocation when returned from libyachtrock functions
+  yr_test_suite_t suites[];
+};
+typedef struct yr_test_suite_collection yr_test_suite_collection_s;
+typedef yr_test_suite_collection_s *yr_test_suite_collection_t;
+
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_create_from_suites(size_t num_suites, yr_test_suite_t *suites);
 
 #endif

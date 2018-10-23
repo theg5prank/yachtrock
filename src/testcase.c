@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdalign.h>
 
 static bool isdelim(int c)
 {
@@ -112,4 +113,83 @@ yr_create_blank_suite(size_t num_cases)
     suite->cases[i].suite = suite;
   }
   return suite;
+}
+
+static const size_t SUITE_ALIGNMENT = alignof(struct yr_test_suite);
+static size_t test_suite_string_storage_size(yr_test_suite_t suite)
+{
+  size_t necessary = strlen(suite->name) + 1;
+  for ( size_t i = 0; i < suite->num_cases; i++ ) {
+    necessary += strlen(suite->cases[i].name) + 1;
+  }
+  return necessary;
+}
+static size_t test_suite_total_size(yr_test_suite_t suite)
+{
+  /* include padding at the end of the string storage to allow for arrays of suites
+   * that have their own string storage. For now. Until I want to reclaim those 7*n bytes
+   */
+  size_t strictly_necessary = (sizeof(struct yr_test_suite) +
+                               sizeof(struct yr_test_case) * suite->num_cases +
+                               test_suite_string_storage_size(suite));
+  size_t remainder = strictly_necessary % SUITE_ALIGNMENT;
+  size_t padding = remainder == 0 ? 0 : (strictly_necessary - remainder) + SUITE_ALIGNMENT;
+  return strictly_necessary + padding;
+}
+static char *test_suite_string_storage_location(yr_test_suite_t suite)
+{
+  return (char *)&(suite->cases[suite->num_cases]);
+}
+static void copy_test_suite(yr_test_suite_t dst, yr_test_suite_t src)
+{
+  /* copy everything including name POINTERS first. That lets us calculate where the string part is
+   * so we can do the real copying of the names.
+   */
+  dst->refcon = src->refcon;
+  dst->lifecycle = src->lifecycle;
+  dst->num_cases = src->num_cases;
+  for ( size_t i = 0; i < src->num_cases; i++ ) {
+    dst->cases[i].testcase = src->cases[i].testcase;
+    dst->cases[i].suite = dst;
+  }
+
+  char *test_suite_string_storage_insertion_point = test_suite_string_storage_location(dst);
+  strcpy(test_suite_string_storage_insertion_point, src->name);
+  dst->name = test_suite_string_storage_insertion_point;
+  test_suite_string_storage_insertion_point += strlen(test_suite_string_storage_insertion_point) + 1;
+
+  for ( size_t i = 0; i < src->num_cases; i++ ) {
+    strcpy(test_suite_string_storage_insertion_point, src->cases[i].name);
+    dst->cases[i].name = test_suite_string_storage_insertion_point;
+    test_suite_string_storage_insertion_point += strlen(test_suite_string_storage_insertion_point) + 1;
+  }
+
+  assert(test_suite_string_storage_insertion_point - (char *)dst <= test_suite_total_size(src));
+  assert(test_suite_total_size(src) == test_suite_total_size(dst));
+}
+
+yr_test_suite_collection_t
+yr_test_suite_collection_create_from_suites(size_t num_suites, yr_test_suite_t *suites)
+{
+  size_t suite_memory_needed = 0;
+  for ( size_t i = 0; i < num_suites; i++ ) {
+    suite_memory_needed += test_suite_total_size(suites[i]);
+  }
+  size_t pointer_memory_needed = sizeof(yr_test_suite_t) * num_suites;
+  size_t suite_alignment_padding = SUITE_ALIGNMENT - ( pointer_memory_needed % SUITE_ALIGNMENT );
+  pointer_memory_needed += suite_alignment_padding;
+  yr_test_suite_collection_t collection = malloc(sizeof(struct yr_test_suite_collection) +
+                                                 pointer_memory_needed +
+                                                 suite_memory_needed);
+  collection->num_suites = num_suites;
+
+  void *next_suite_placement = (char *)(&collection->suites[num_suites]) + suite_alignment_padding;
+  for ( size_t i = 0; i < num_suites; i++ ) {
+    yr_test_suite_t suite = next_suite_placement;
+    copy_test_suite(suite, suites[i]);
+    collection->suites[i] = suite;
+
+    next_suite_placement = (char *)next_suite_placement + test_suite_total_size(suites[i]);
+  }
+  return collection;
 }
