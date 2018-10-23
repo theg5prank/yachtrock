@@ -45,10 +45,12 @@ struct yr_test_suite {
 YACHTROCK_EXTERN yr_test_suite_t
 _yr_create_suite_from_functions(const char *name,
                                 struct yr_suite_lifecycle_callbacks *callbacks,
+                                void *suite_refcon,
                                 const char *cs_names,
                                 yr_test_case_function first, ...);
-#define yr_create_suite_from_functions(name, lifecycle_callbacks, ...)  \
-  _yr_create_suite_from_functions(name, lifecycle_callbacks, # __VA_ARGS__, __VA_ARGS__)
+#define yr_create_suite_from_functions(name, lifecycle_callbacks, suite_refcon, ...) \
+  _yr_create_suite_from_functions(name, lifecycle_callbacks, suite_refcon, \
+                                  # __VA_ARGS__, __VA_ARGS__)
 
 /* Create a blank suite on the heap that you have to fill out.
  * It has the right number of cases that have the suite pointers in the cases set correctly.

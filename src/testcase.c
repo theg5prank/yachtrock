@@ -54,6 +54,7 @@ static size_t num_names(const char *cs_names)
 yr_test_suite_t
 _yr_create_suite_from_functions(const char *name,
                                 struct yr_suite_lifecycle_callbacks *callbacks,
+                                void *suite_refcon,
                                 const char *cs_names,
                                 yr_test_case_function first, ...)
 {
@@ -61,6 +62,7 @@ _yr_create_suite_from_functions(const char *name,
   size_t names_size = ginormous_namestring_size(cs_names);
   yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * n_names + names_size, 1);
   suite->name = name;
+  suite->refcon = suite_refcon;
   if ( callbacks ) {
     suite->lifecycle = *callbacks;
   } else {
