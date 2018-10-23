@@ -197,7 +197,7 @@ int main(void)
   struct yr_suite_lifecycle_callbacks callbacks = {0};
   callbacks.setup_case = result_store_case_setup;
   callbacks.teardown_case = result_store_case_teardown;
-  yr_test_suite_t suite = yr_create_suite_from_functions("result store tests", &callbacks,
+  yr_test_suite_t suite = yr_create_suite_from_functions("result store tests", NULL, callbacks,
                                                          test_closing_store_passes,
                                                          test_failing_subresult_fails_parent,
                                                          test_no_unfailing,

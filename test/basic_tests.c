@@ -101,7 +101,7 @@ void do_test_basics_suite_from_functions(yr_test_case_t tc)
   callbacks.setup_suite = setup_test_suite_setup;
   callbacks.teardown_suite = setup_test_suite_teardown;
   
-  yr_test_suite_t suite = yr_create_suite_from_functions(__FUNCTION__, &callbacks, NULL,
+  yr_test_suite_t suite = yr_create_suite_from_functions(__FUNCTION__, NULL, callbacks,
                                                          test_suite_and_case_setups_run_pt1, test_suite_and_case_setups_run_pt2);
   suite->refcon = &data;
   yr_basic_run_suite(suite);
@@ -113,7 +113,7 @@ void do_test_basics_suite_from_functions(yr_test_case_t tc)
 
   free(suite);
 
-  suite = yr_create_suite_from_functions(__FUNCTION__, &callbacks, NULL,
+  suite = yr_create_suite_from_functions(__FUNCTION__, NULL, callbacks,
                                          test_suite_and_case_setups_run_pt1);
   memset(&data, 0, sizeof(data));
   suite->refcon = &data;
@@ -157,7 +157,7 @@ void test_skip_dummy(yr_test_case_t tc)
 }
 void do_test_skip_basics(yr_test_case_t tc)
 {
-  yr_test_suite_t suite = yr_create_suite_from_functions("skip basics subtest", NULL, NULL,
+  yr_test_suite_t suite = yr_create_suite_from_functions("skip basics subtest", NULL, YR_NO_CALLBACKS,
                                                          test_skip_dummy);
   YR_ASSERT(yr_basic_run_suite(suite) == 0);
   free(suite);
@@ -175,7 +175,7 @@ YR_TESTCASE(test_case_decl_with_name, tc)
 
 int main(void)
 {
-  yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", NULL, NULL,
+  yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", NULL, YR_NO_CALLBACKS,
                                                          do_test_failures, do_test_refcon,
                                                          do_test_basics_setups_teardowns,
                                                          do_test_basics_suite_from_functions,

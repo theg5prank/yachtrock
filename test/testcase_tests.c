@@ -21,7 +21,7 @@ YR_TESTCASE(test_create_from_functions)
   };
 
   yr_test_suite_t suite = yr_create_suite_from_functions("the name",
-                                                         &callbacks,
+                                                         NULL, callbacks,
                                                          dummy1, dummy2, dummy3);
 
   YR_ASSERT_EQUAL(strcmp(suite->name, "the name"), 0);
@@ -80,7 +80,7 @@ YR_TESTCASE(test_collection_from_suites_basic)
   };
 
   yr_test_suite_t suite = yr_create_suite_from_functions("the name",
-                                                         &callbacks,
+                                                         NULL, callbacks,
                                                          dummy1, dummy2, dummy3);
 
   yr_test_suite_t suites[] = {suite, suite};
@@ -129,16 +129,16 @@ YR_TESTCASE(test_collection_from_suites_more)
   };
 
   yr_test_suite_t suite1 = yr_create_suite_from_functions("suite1",
-                                                          &callbacks1,
+                                                          NULL, callbacks1,
                                                           dummy1, dummy2, dummy3);
   yr_test_suite_t suite2 = yr_create_suite_from_functions("suite2",
-                                                          &callbacks2,
+                                                          NULL, callbacks2,
                                                           dummy12, dummy22, dummy32);
   yr_test_suite_t suite3 = yr_create_suite_from_functions("suite3",
-                                                          &callbacks3,
+                                                          NULL, callbacks3,
                                                           dummy12, dummy2);
   yr_test_suite_t suite4 = yr_create_suite_from_functions("suite4",
-                                                          NULL,
+                                                          NULL, YR_NO_CALLBACKS,
                                                           dummy1, dummy22, dummy32, dummy12);
   yr_test_suite_t suites[] = { suite1, suite2, suite3, suite4 };
 
@@ -154,6 +154,7 @@ YR_TESTCASE(test_collection_from_suites_more)
 int main(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", NULL,
+                                                         YR_NO_CALLBACKS,
                                                          test_create_from_functions,
                                                          test_collection_from_suites_basic,
                                                          test_collection_from_suites_more);

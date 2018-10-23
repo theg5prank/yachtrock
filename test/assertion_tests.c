@@ -16,7 +16,7 @@
   static void name(yr_test_case_t tc)                                   \
   {                                                                     \
     yr_test_suite_t suite = yr_create_suite_from_functions(#name " (intentionally failing suite)", \
-                                                           NULL, NULL,  \
+                                                           NULL, YR_NO_CALLBACKS, \
                                                            __failing_test__ ## name); \
     int result = yr_basic_run_suite(suite);                             \
     free(suite);                                                        \
@@ -57,7 +57,7 @@ FAILING_TEST_CASE(test_fail, YR_FAIL, "failing is important sometimes: %s", "you
 int main(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("assertion tests",
-                                                         NULL, NULL,
+                                                         NULL, YR_NO_CALLBACKS,
                                                          test_assert_equal,
                                                          test_assert_equal_fails,
                                                          test_assert_false,

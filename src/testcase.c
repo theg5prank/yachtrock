@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdalign.h>
 
+const struct yr_suite_lifecycle_callbacks YR_NO_CALLBACKS = {0};
+
 static bool isdelim(int c)
 {
   return isspace(c) || c == ',';
@@ -53,8 +55,8 @@ static size_t num_names(const char *cs_names)
 
 yr_test_suite_t
 _yr_create_suite_from_functions(const char *name,
-                                struct yr_suite_lifecycle_callbacks *callbacks,
                                 void *suite_refcon,
+                                struct yr_suite_lifecycle_callbacks callbacks,
                                 const char *cs_names,
                                 yr_test_case_function first, ...)
 {
@@ -63,11 +65,7 @@ _yr_create_suite_from_functions(const char *name,
   yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * n_names + names_size, 1);
   suite->name = name;
   suite->refcon = suite_refcon;
-  if ( callbacks ) {
-    suite->lifecycle = *callbacks;
-  } else {
-    suite->lifecycle = (struct yr_suite_lifecycle_callbacks){0};
-  }
+  suite->lifecycle = callbacks;
   suite->num_cases = n_names;
 
   char *next_name_destination_start = (char *)(&(suite->cases[n_names]));
