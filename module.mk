@@ -23,7 +23,7 @@ LIBYACHTROCK_SRC := $(LIBYACHTROCK_STATIC_SRC) $(LIBYACHTROCK_GENERATED_SRC)
 LIBYACHTROCK_HEADER_SOURCES := $(wildcard $(LIBYACHTROCK_DIR)public_headers/yachtrock/*.h)
 LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers,$(PREFIX)/include,$(LIBYACHTROCK_HEADER_SOURCES))
 
-LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c
+LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c run_under_store_tests.c
 LIBYACHTROCK_TESTSRC := $(patsubst %,$(LIBYACHTROCK_DIR)test/%,$(LIBYACHTROCK_TESTSRC))
 CSRC += $(LIBYACHTROCK_SRC)
 CSRC += $(LIBYACHTROCK_TESTSRC)
@@ -36,7 +36,7 @@ $(LIBYACHTROCK_STATIC_SRC): $(LIBYACHTROCK_GENERATED_SRC)
 
 $(LIBYACHTROCK_OBJ): CFLAGS += -fPIC
 
-test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase
+test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase test_libyachtrock_run_under_store
 
 test_libyachtrock_%: libyachtrock_%_tests_success
 	true
@@ -45,7 +45,7 @@ libyachtrock_%_tests_success: $(LIBYACHTROCK_DIR)test/%_tests
 	./$<
 
 $(LIBYACHTROCK_DIR)test/%_tests: $(LIBYACHTROCK_DIR)test/%_tests.o $(LIBYACHTROCK_ARNAME)
-	cc $^ $(LIBYACHTROCK_LINKS) -o $@
+	clang $^ $(LIBYACHTROCK_LINKS) -o $@
 
 # without this the test binaries themselves are considered intermediaries and are removed
 .SECONDARY: $(LIBYACHTROCK_TESTS)
