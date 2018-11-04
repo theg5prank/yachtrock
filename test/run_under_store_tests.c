@@ -13,7 +13,7 @@ struct run_under_result_store_store_context
   bool dummy2_seen_pass;
   bool dummy2_seen_close;
   bool dummy3_seen_open;
-  bool dummy3_seen_pass;
+  bool dummy3_seen_fail;
   bool dummy3_seen_close;
 };
 
@@ -42,6 +42,7 @@ static YR_TESTCASE(dummy2)
 static YR_TESTCASE(dummy3)
 {
   ((struct run_under_result_store_suite_context *)testcase->suite->refcon)->dummy3_seen_case = true;
+  YR_FAIL("Failed for totally expected reasons!");
 }
 static void case_opened_callback(yr_test_case_t testcase)
 {
@@ -111,16 +112,13 @@ static void store_changed_callback(yr_result_store_t store, void *refcon)
   if ( num_hops_to_root != 2 ) {
     return;
   }
-  if ( yr_result_store_get_result(store) != YR_RESULT_PASSED ) {
-    return;
-  }
   struct run_under_result_store_store_context *context = refcon;
   if ( strcmp(yr_result_store_get_name(store), "dummy1") == 0 ) {
-    context->dummy1_seen_pass = true;
+    context->dummy1_seen_pass = yr_result_store_get_result(store) == YR_RESULT_PASSED;
   } else if ( strcmp(yr_result_store_get_name(store), "dummy2") == 0 ) {
-    context->dummy2_seen_pass = true;
+    context->dummy2_seen_pass = yr_result_store_get_result(store) == YR_RESULT_PASSED;
   } if ( strcmp(yr_result_store_get_name(store), "dummy3") == 0 ) {
-    context->dummy3_seen_pass = true;
+    context->dummy3_seen_fail = yr_result_store_get_result(store) == YR_RESULT_FAILED;
   }
 }
 
@@ -179,7 +177,7 @@ static YR_TESTCASE(test_run_under_store_callbacks)
   YR_ASSERT(store_context->dummy2_seen_pass);
   YR_ASSERT(store_context->dummy2_seen_close);
   YR_ASSERT(store_context->dummy3_seen_open);
-  YR_ASSERT(store_context->dummy3_seen_pass);
+  YR_ASSERT(store_context->dummy3_seen_fail);
   YR_ASSERT(store_context->dummy3_seen_close);
 
   struct run_under_result_store_suite_context *suite_context = context->suite_context;
@@ -194,6 +192,8 @@ static YR_TESTCASE(test_run_under_store_callbacks)
   YR_ASSERT(suite_context->dummy3_seen_opened_hook);
   YR_ASSERT(suite_context->dummy3_seen_case);
   YR_ASSERT(suite_context->dummy3_seen_closed_hook);
+
+  YR_ASSERT_EQUAL(yr_result_store_get_result(context->store), YR_RESULT_FAILED);
 }
 
 int main(void)
