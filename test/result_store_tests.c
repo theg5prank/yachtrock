@@ -191,6 +191,58 @@ void test_hooks(void)
   yr_result_store_destroy(store);
 }
 
+static YR_TESTCASE(test_copy_description)
+{
+  yr_result_store_t store = yr_result_store_create("root");
+  yr_result_store_t subresult1 = yr_result_store_open_subresult(store, "subresult");
+  yr_result_store_t leaf1 = yr_result_store_open_subresult(subresult1, "leaf1");
+  yr_result_store_t leaf2 = yr_result_store_open_subresult(subresult1, "leaf2");
+  yr_result_store_t subresult2 = yr_result_store_open_subresult(store, "subresult2");
+  yr_result_store_t leaf3 = yr_result_store_open_subresult(subresult2, "leaf3");
+  char *desc = yr_result_store_copy_description(store);
+  char *expected1 =
+    ("root [UNSET]\n"
+     "    subresult [UNSET]\n"
+     "        leaf1 [UNSET]\n"
+     "        leaf2 [UNSET]\n"
+     "    subresult2 [UNSET]\n"
+     "        leaf3 [UNSET]");
+  YR_ASSERT_EQUAL(strcmp(desc, expected1), 0);
+  free(desc);
+
+  yr_result_store_close(leaf1);
+  yr_result_store_record_result(leaf2, YR_RESULT_SKIPPED);
+  desc = yr_result_store_copy_description(store);
+  char *expected2 =
+    ("root [UNSET]\n"
+     "    subresult [UNSET]\n"
+     "        leaf1 [PASSED]\n"
+     "        leaf2 [SKIPPED]\n"
+     "    subresult2 [UNSET]\n"
+     "        leaf3 [UNSET]");
+  YR_ASSERT_EQUAL(strcmp(desc, expected2), 0);
+  free(desc);
+
+  yr_result_store_record_result(leaf3, YR_RESULT_FAILED);
+  yr_result_store_close(leaf1);
+  yr_result_store_close(leaf2);
+  yr_result_store_close(subresult1);
+  yr_result_store_close(leaf3);
+  yr_result_store_close(subresult2);
+  yr_result_store_close(store);
+  desc = yr_result_store_copy_description(store);
+  char *expected3 =
+    ("root [FAILED]\n"
+     "    subresult [PASSED]\n"
+     "        leaf1 [PASSED]\n"
+     "        leaf2 [SKIPPED]\n"
+     "    subresult2 [FAILED]\n"
+     "        leaf3 [FAILED]");
+  YR_ASSERT_EQUAL(strcmp(desc, expected3), 0);
+  free(desc);
+  yr_result_store_destroy(store);
+}
+
 int main(void)
 {
   struct result_store_test_context test_context;
@@ -205,7 +257,8 @@ int main(void)
                                                          test_skips_basics,
                                                          test_getters,
                                                          test_enumeration,
-                                                         test_hooks);
+                                                         test_hooks,
+                                                         test_copy_description);
   suite->refcon = &test_context;
   int failures = yr_basic_run_suite(suite);
   if ( failures ) {

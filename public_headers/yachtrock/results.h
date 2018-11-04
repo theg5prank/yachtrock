@@ -2,6 +2,7 @@
 #define YACHTROCK_RESULTS_H
 
 #include <yachtrock/base.h>
+#include <stdlib.h>
 
 typedef enum yr_result {
   YR_RESULT_UNSET,
@@ -35,5 +36,8 @@ YACHTROCK_EXTERN yr_result_store_t yr_result_store_get_parent(yr_result_store_t 
 typedef void (*yr_result_store_enumerator_t)(yr_result_store_t subresult, void *refcon);
 YACHTROCK_EXTERN void yr_result_store_enumerate(yr_result_store_t store,
                                                 yr_result_store_enumerator_t enumerator, void *refcon);
+
+YACHTROCK_EXTERN size_t yr_result_store_get_description(yr_result_store_t store, char *buf, size_t buf_size);
+YACHTROCK_EXTERN char *yr_result_store_copy_description(yr_result_store_t store);
 
 #endif

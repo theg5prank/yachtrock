@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <assert.h>
 
 struct yr_result_store
 {
@@ -186,4 +187,95 @@ void yr_result_store_enumerate(yr_result_store_t store, yr_result_store_enumerat
   for ( size_t i = 0; i < store->subresult_count; i++ ) {
     enumerator(store->subresults[i], refcon);
   }
+}
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf, size_t buf_size, unsigned depth);
+struct _get_description_enumeration_context
+{
+  char *buf;
+  size_t buf_size;
+  unsigned depth;
+  size_t amount;
+};
+
+static void _get_description_child_enumerator(yr_result_store_t subresult, void *refcon)
+{
+  struct _get_description_enumeration_context *context = refcon;
+  size_t used = _yr_result_store_get_description_depth(subresult, context->buf, context->buf_size,
+                                                       context->depth + 1);
+  size_t advance = MIN(context->buf_size, used);
+  context->buf += advance;
+  context->buf_size -= advance;
+  context->amount += used;
+}
+
+// This function returns the number of characters NOT including the terminating NUL
+static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf, size_t buf_size, unsigned depth)
+{
+  char _;
+  if ( buf == NULL ) {
+    if ( buf_size > 0 ) {
+      // don't hide a bug by mistake
+      fprintf(stderr, "don't try to write store description into a NULL pointer\n");
+      abort();
+    }
+    // don't pass NULL to snprintf
+    buf = &_;
+  }
+
+  char *result_addendum = NULL;
+  switch ( yr_result_store_get_result(store) ) {
+  case YR_RESULT_UNSET:
+    result_addendum = " [UNSET]";
+    break;
+  case YR_RESULT_PASSED:
+    result_addendum = " [PASSED]";
+    break;
+  case YR_RESULT_FAILED:
+    result_addendum = " [FAILED]";
+    break;
+  case YR_RESULT_SKIPPED:
+    result_addendum = " [SKIPPED]";
+    break;
+  }
+
+  int num_spaces = depth * 4;
+  const char *name = yr_result_store_get_name(store);
+  bool newline_required = depth != 0;
+  size_t amount = (newline_required ? 1 : 0) + num_spaces + strlen(name) + strlen(result_addendum);
+
+  /* newline (or empty), spaces, name, addendum */
+  int written = snprintf(buf, buf_size, "%s%*s%s%s", newline_required ? "\n" : "", num_spaces, "", name, result_addendum);
+  assert(written > 0);
+  assert(written == amount);
+  size_t advance = MIN(written, buf_size);
+  buf += advance;
+  buf_size -= advance;
+
+  struct _get_description_enumeration_context enumeration_context = {0};
+  enumeration_context.buf = buf;
+  enumeration_context.buf_size = buf_size;
+  enumeration_context.depth = depth;
+  enumeration_context.amount = 0;
+
+  yr_result_store_enumerate(store, _get_description_child_enumerator, &enumeration_context);
+
+  return amount + enumeration_context.amount;
+}
+
+size_t yr_result_store_get_description(yr_result_store_t store, char *buf, size_t buf_size)
+{
+  return _yr_result_store_get_description_depth(store, buf, buf_size, 0) + 1;
+}
+
+char *yr_result_store_copy_description(yr_result_store_t store)
+{
+  size_t necessary = yr_result_store_get_description(store, NULL, 0);
+  char *buf = malloc(necessary);
+  yr_result_store_get_description(store, buf, necessary);
+  return buf;
 }
