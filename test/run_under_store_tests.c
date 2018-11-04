@@ -218,6 +218,24 @@ static YR_TESTCASE(test_run_under_store_callbacks)
   YR_ASSERT_EQUAL(yr_result_store_get_result(context->store), YR_RESULT_FAILED);
 }
 
+static void _yr_enumerate_subresults_assert_closed(yr_result_store_t subresult, void *refcon)
+{
+  unsigned *visited = refcon;
+  (*visited)++;
+  YR_ASSERT(yr_result_store_is_closed(subresult));
+  yr_result_store_enumerate(subresult, _yr_enumerate_subresults_assert_closed, refcon);
+}
+static YR_TESTCASE(test_run_under_store_closes_subresults_only)
+{
+  struct store_and_suite_context *context = testcase->suite->refcon;
+  struct yr_result_callbacks result_callbacks = {0};
+  yr_run_suite_under_store(context->suite, context->store, result_callbacks);
+  YR_ASSERT_FALSE(yr_result_store_is_closed(context->store));
+  unsigned visited = 0;
+  yr_result_store_enumerate(context->store, _yr_enumerate_subresults_assert_closed, &visited);
+  YR_ASSERT_EQUAL(visited, 4);
+}
+
 int main(void)
 {
   struct yr_suite_lifecycle_callbacks suite_callbacks = {
@@ -226,7 +244,8 @@ int main(void)
   };
   yr_test_suite_t suite = yr_create_suite_from_functions("run under store tests", NULL,
                                                          suite_callbacks,
-                                                         test_run_under_store_callbacks);
+                                                         test_run_under_store_callbacks,
+                                                         test_run_under_store_closes_subresults_only);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;

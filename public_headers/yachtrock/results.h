@@ -2,6 +2,7 @@
 #define YACHTROCK_RESULTS_H
 
 #include <yachtrock/base.h>
+#include <stdbool.h>
 
 typedef enum yr_result {
   YR_RESULT_UNSET,
@@ -26,6 +27,7 @@ YACHTROCK_EXTERN yr_result_store_t yr_result_store_create_with_hooks(const char 
 YACHTROCK_EXTERN void yr_result_store_destroy(yr_result_store_t store);
 
 YACHTROCK_EXTERN void yr_result_store_close(yr_result_store_t store);
+YACHTROCK_EXTERN bool yr_result_store_is_closed(yr_result_store_t store);
 YACHTROCK_EXTERN yr_result_store_t yr_result_store_open_subresult(yr_result_store_t store, const char *name);
 YACHTROCK_EXTERN void yr_result_store_record_result(yr_result_store_t store, yr_result_t result);
 YACHTROCK_EXTERN yr_result_t yr_result_store_get_result(yr_result_store_t store);

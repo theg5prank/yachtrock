@@ -138,6 +138,11 @@ void yr_result_store_close(yr_result_store_t store)
   CALL_HOOK(store, store_closed);
 }
 
+bool yr_result_store_is_closed(yr_result_store_t store)
+{
+  return !store->open;
+}
+
 yr_result_store_t yr_result_store_open_subresult(yr_result_store_t store, const char *name)
 {
   store_mut_check(store);
