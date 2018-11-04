@@ -166,10 +166,33 @@ static void teardown_store_and_suite(yr_test_case_t testcase)
 static YR_TESTCASE(test_run_under_store_callbacks)
 {
   struct store_and_suite_context *context = testcase->suite->refcon;
+  struct run_under_result_store_store_context *store_context = context->store_context;
+  struct run_under_result_store_suite_context *suite_context = context->suite_context;
+  YR_ASSERT_FALSE(store_context->dummy1_seen_open);
+  YR_ASSERT_FALSE(store_context->dummy1_seen_pass);
+  YR_ASSERT_FALSE(store_context->dummy1_seen_close);
+  YR_ASSERT_FALSE(store_context->dummy2_seen_open);
+  YR_ASSERT_FALSE(store_context->dummy2_seen_pass);
+  YR_ASSERT_FALSE(store_context->dummy2_seen_close);
+  YR_ASSERT_FALSE(store_context->dummy3_seen_open);
+  YR_ASSERT_FALSE(store_context->dummy3_seen_fail);
+  YR_ASSERT_FALSE(store_context->dummy3_seen_close);
+
+  YR_ASSERT_EQUAL(suite_context->rutabega[0], 0);
+  YR_ASSERT_EQUAL(suite_context->rutabega[1], 0);
+  YR_ASSERT_FALSE(suite_context->dummy1_seen_opened_hook);
+  YR_ASSERT_FALSE(suite_context->dummy1_seen_case);
+  YR_ASSERT_FALSE(suite_context->dummy1_seen_closed_hook);
+  YR_ASSERT_FALSE(suite_context->dummy2_seen_opened_hook);
+  YR_ASSERT_FALSE(suite_context->dummy2_seen_case);
+  YR_ASSERT_FALSE(suite_context->dummy2_seen_closed_hook);
+  YR_ASSERT_FALSE(suite_context->dummy3_seen_opened_hook);
+  YR_ASSERT_FALSE(suite_context->dummy3_seen_case);
+  YR_ASSERT_FALSE(suite_context->dummy3_seen_closed_hook);
+
   struct yr_result_callbacks result_callbacks = {0};
   yr_run_suite_under_store(context->suite, context->store, result_callbacks);
 
-  struct run_under_result_store_store_context *store_context = context->store_context;
   YR_ASSERT(store_context->dummy1_seen_open);
   YR_ASSERT(store_context->dummy1_seen_pass);
   YR_ASSERT(store_context->dummy1_seen_close);
@@ -180,7 +203,6 @@ static YR_TESTCASE(test_run_under_store_callbacks)
   YR_ASSERT(store_context->dummy3_seen_fail);
   YR_ASSERT(store_context->dummy3_seen_close);
 
-  struct run_under_result_store_suite_context *suite_context = context->suite_context;
   YR_ASSERT_EQUAL(suite_context->rutabega[0], 0);
   YR_ASSERT_EQUAL(suite_context->rutabega[1], 0);
   YR_ASSERT(suite_context->dummy1_seen_opened_hook);
