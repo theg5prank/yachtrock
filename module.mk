@@ -45,7 +45,7 @@ libyachtrock_%_tests_success: $(LIBYACHTROCK_DIR)test/%_tests
 	./$<
 
 $(LIBYACHTROCK_DIR)test/%_tests: $(LIBYACHTROCK_DIR)test/%_tests.o $(LIBYACHTROCK_ARNAME)
-	clang $^ $(LIBYACHTROCK_LINKS) -o $@
+	$(CC) $^ $(LIBYACHTROCK_LINKS) -o $@
 
 # without this the test binaries themselves are considered intermediaries and are removed
 .SECONDARY: $(LIBYACHTROCK_TESTS)
