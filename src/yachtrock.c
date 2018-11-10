@@ -12,12 +12,12 @@ struct opened_testsuite
   yr_test_case_s *cases;
   yr_result_store_t store;
   yr_result_store_t current_case_store;
+  bool owns_result_store;
 };
 
-static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct yr_result_callbacks callbacks,
-                                           struct yr_result_hooks result_hooks, void *result_refcon)
+static void _init_opened_suite_except_store(struct opened_testsuite *collection, yr_test_suite_t suite,
+                                            struct yr_result_callbacks callbacks)
 {
-  struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
   collection->saved_result_callbacks = yr_set_result_callbacks(callbacks);
   collection->suite = suite;
   collection->num_cases = suite->num_cases;
@@ -25,11 +25,28 @@ static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct yr_resu
   if ( suite->lifecycle.setup_suite ) {
     suite->lifecycle.setup_suite(suite);
   }
+}
+static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct yr_result_callbacks callbacks,
+                                           struct yr_result_hooks result_hooks, void *result_refcon)
+{
+  struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
+  _init_opened_suite_except_store(collection, suite, callbacks);
   collection->store = yr_result_store_create_with_hooks(suite->name, result_hooks, result_refcon);
+  collection->owns_result_store = true;
   collection->current_case_store = NULL;
   return collection;
 }
-
+static struct opened_testsuite *open_suite_as_child_of_store(yr_test_suite_t suite,
+                                                             struct yr_result_callbacks callbacks,
+                                                             yr_result_store_t root)
+{
+  struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
+  _init_opened_suite_except_store(collection, suite, callbacks);
+  collection->store = yr_result_store_open_subresult(root, suite->name);
+  collection->owns_result_store = false;
+  collection->current_case_store = NULL;
+  return collection;
+}
 static void close_opened_suite(struct opened_testsuite *opened_suite)
 {
   yr_result_store_close(opened_suite->store);
@@ -40,7 +57,9 @@ static void close_opened_suite(struct opened_testsuite *opened_suite)
 }
 static void destroy_opened_suite(struct opened_testsuite *opened_suite)
 {
-  yr_result_store_destroy(opened_suite->store);
+  if ( opened_suite->owns_result_store ) {
+    yr_result_store_destroy(opened_suite->store);
+  }
   free(opened_suite);
 }
 static void execute_case(struct opened_testsuite *opened_suite, yr_test_case_t testcase)
@@ -164,16 +183,21 @@ static void yr_run_suite_with_result_hooks_skipped_callback(const char *file, si
   yr_result_store_record_result(context->suite->current_case_store, YR_RESULT_SKIPPED);
 }
 
-int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
-                                   void *result_hook_refcon,
-                                   struct yr_result_callbacks provided_result_callbacks)
+typedef struct opened_testsuite *(*testsuite_opener)(yr_test_suite_t suite,
+                                                     struct yr_result_callbacks result_callbacks,
+                                                     void *refcon);
+
+static int _yr_run_suite_with_result_hooks_with_testsuite_opener(yr_test_suite_t suite,
+                                                                 struct yr_result_callbacks provided_result_callbacks,
+                                                                 void *opener_refcon,
+                                                                 testsuite_opener opener)
 {
   struct yr_result_callbacks result_callbacks = {0};
   struct run_suite_with_result_hooks_runtime_context runtime_context;
   result_callbacks.refcon = &runtime_context;
   result_callbacks.note_assertion_failed = yr_run_suite_with_result_hooks_assertion_callback;
   result_callbacks.note_skipped = yr_run_suite_with_result_hooks_skipped_callback;
-  struct opened_testsuite *opened = open_suite(suite, result_callbacks, hooks, result_hook_refcon);
+  struct opened_testsuite *opened = opener(suite, result_callbacks, opener_refcon);
   runtime_context.suite = opened;
   runtime_context.provided_result_callbacks = provided_result_callbacks;
   for ( size_t i = 0; i < opened->num_cases; i++ ) {
@@ -183,4 +207,63 @@ int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks
   bool success = yr_result_store_get_result(opened->store) == YR_RESULT_PASSED;
   destroy_opened_suite(opened);
   return !success;
+}
+
+struct yr_run_suite_with_result_hooks_opener_context
+{
+  struct yr_result_hooks hooks;
+  void *result_hook_refcon;
+};
+static struct opened_testsuite *
+_yr_run_suite_with_result_hooks_opener(yr_test_suite_t suite,
+                                       struct yr_result_callbacks result_callbacks,
+                                       void *refcon)
+{
+  struct yr_run_suite_with_result_hooks_opener_context *context = refcon;
+  return open_suite(suite, result_callbacks, context->hooks, context->result_hook_refcon);
+}
+int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
+                                   void *result_hook_refcon,
+                                   struct yr_result_callbacks provided_result_callbacks)
+{
+  struct yr_run_suite_with_result_hooks_opener_context opener_context;
+  opener_context.hooks = hooks;
+  opener_context.result_hook_refcon = result_hook_refcon;
+  return _yr_run_suite_with_result_hooks_with_testsuite_opener(suite,
+                                                               provided_result_callbacks,
+                                                               &opener_context,
+                                                               _yr_run_suite_with_result_hooks_opener);
+}
+
+struct yr_run_suite_under_store_opener_context
+{
+  yr_result_store_t store;
+};
+static struct opened_testsuite *
+_yr_run_suite_under_store_opener(yr_test_suite_t suite,
+                                 struct yr_result_callbacks result_callbacks,
+                                 void *refcon)
+{
+  yr_result_store_t store = ((struct yr_run_suite_under_store_opener_context *)refcon)->store;
+  return open_suite_as_child_of_store(suite, result_callbacks, store);
+}
+void yr_run_suite_under_store(yr_test_suite_t suite,
+                              yr_result_store_t store,
+                              struct yr_result_callbacks provided_result_callbacks)
+{
+  struct yr_run_suite_under_store_opener_context opener_context;
+  opener_context.store = store;
+  _yr_run_suite_with_result_hooks_with_testsuite_opener(suite,
+                                                        provided_result_callbacks,
+                                                        &opener_context,
+                                                        _yr_run_suite_under_store_opener);
+}
+
+void yr_run_suite_collection_under_store(yr_test_suite_collection_t collection,
+                                         yr_result_store_t store,
+                                         struct yr_result_callbacks result_callbacks)
+{
+  for ( size_t i = 0; i < collection->num_suites; i++ ) {
+    yr_run_suite_under_store(collection->suites[i], store, result_callbacks);
+  }
 }

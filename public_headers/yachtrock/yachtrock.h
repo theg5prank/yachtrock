@@ -12,4 +12,11 @@ YACHTROCK_EXTERN int yr_run_suite_with_result_hooks(yr_test_suite_t suite,
                                                     void *result_hook_refcon,
                                                     struct yr_result_callbacks result_callbacks);
 
+YACHTROCK_EXTERN void yr_run_suite_under_store(yr_test_suite_t suite,
+                                               yr_result_store_t store,
+                                               struct yr_result_callbacks result_callbacks);
+YACHTROCK_EXTERN void yr_run_suite_collection_under_store(yr_test_suite_collection_t collection,
+                                                          yr_result_store_t store,
+                                                          struct yr_result_callbacks result_callbacks);
+
 #endif
