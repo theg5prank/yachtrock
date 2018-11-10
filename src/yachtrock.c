@@ -258,3 +258,12 @@ void yr_run_suite_under_store(yr_test_suite_t suite,
                                                         &opener_context,
                                                         _yr_run_suite_under_store_opener);
 }
+
+void yr_run_suite_collection_under_store(yr_test_suite_collection_t collection,
+                                         yr_result_store_t store,
+                                         struct yr_result_callbacks result_callbacks)
+{
+  for ( size_t i = 0; i < collection->num_suites; i++ ) {
+    yr_run_suite_under_store(collection->suites[i], store, result_callbacks);
+  }
+}

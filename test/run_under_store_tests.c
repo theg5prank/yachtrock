@@ -236,6 +236,103 @@ static YR_TESTCASE(test_run_under_store_closes_subresults_only)
   YR_ASSERT_EQUAL(visited, 4);
 }
 
+static YR_TESTCASE(_test_dummy_verify_actually_run)
+{
+  unsigned *context = testcase->suite->refcon;
+  YR_ASSERT_EQUAL(*context, 0);
+  *context = 0xDEADBEEF;
+}
+static YR_TESTCASE(_test_dummy_verify_failures_percolate)
+{
+  YR_FAIL("Failing intentionally.");
+}
+struct enumerate_to_find_suites_context
+{
+  bool first_ok;
+  bool second_ok;
+  bool third_ok;
+};
+static void enumerate_to_find_suites(yr_result_store_t subresult, void *refcon)
+{
+  struct enumerate_to_find_suites_context *context = refcon;
+  if ( !yr_result_store_is_closed(subresult) ) {
+    return;
+  }
+  if ( strcmp(yr_result_store_get_name(subresult), "run under store tests") == 0 ) {
+    context->first_ok = yr_result_store_get_result(subresult) == YR_RESULT_PASSED;
+  } else if ( strcmp(yr_result_store_get_name(subresult), "verify tests actually run tests") == 0 ) {
+    context->second_ok = yr_result_store_get_result(subresult) == YR_RESULT_PASSED;
+  } else if ( strcmp(yr_result_store_get_name(subresult), "verify test failures percolate up") == 0 ) {
+    context->third_ok = yr_result_store_get_result(subresult) == YR_RESULT_FAILED;
+  }
+}
+static YR_TESTCASE(test_run_suite_collection_under_store)
+{
+  struct yr_suite_lifecycle_callbacks suite_callbacks = {
+    .setup_case = setup_store_and_suite,
+    .teardown_case = teardown_store_and_suite
+  };
+  yr_test_suite_t suite1 = yr_create_suite_from_functions("run under store tests", NULL,
+                                                          suite_callbacks,
+                                                          test_run_under_store_callbacks,
+                                                          test_run_under_store_closes_subresults_only);
+  yr_test_suite_t suite2 = yr_create_suite_from_functions("verify tests actually run tests", NULL,
+                                                          YR_NO_CALLBACKS,
+                                                          _test_dummy_verify_actually_run);
+  unsigned suite2_context = 0;
+  suite2->refcon = &suite2_context;
+  yr_test_suite_t suite3 = yr_create_suite_from_functions("verify test failures percolate up", NULL,
+                                                          YR_NO_CALLBACKS,
+                                                          _test_dummy_verify_failures_percolate);
+
+  yr_test_suite_t suites[] = {suite1, suite2, suite3};
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(3, suites);
+  free(suite1);
+  free(suite2);
+  free(suite3);
+
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_FAILED, "failures should have percolated");
+  YR_ASSERT_EQUAL(suite2_context, 0xDEADBEEF, "tests should have actually run");
+
+  // verify that all suites are there in order
+  struct enumerate_to_find_suites_context context = {0};
+  yr_result_store_enumerate(store, enumerate_to_find_suites, &context);
+  YR_ASSERT(context.first_ok);
+  YR_ASSERT(context.second_ok);
+  YR_ASSERT(context.third_ok);
+
+  YR_ASSERT(!yr_result_store_is_closed(store));
+  yr_result_store_destroy(store);
+  free(collection);
+
+  // test passes
+  suite1 = yr_create_suite_from_functions("run under store tests", NULL,
+                                          suite_callbacks,
+                                          test_run_under_store_callbacks,
+                                          test_run_under_store_closes_subresults_only);
+  suite2 = yr_create_suite_from_functions("verify tests actually run tests", NULL,
+                                          YR_NO_CALLBACKS,
+                                          _test_dummy_verify_actually_run);
+  suite2_context = 0;
+  suite2->refcon = &suite2_context;
+  yr_test_suite_t suites2[] = {suite1, suite2};
+  collection = yr_test_suite_collection_create_from_suites(2, suites2);
+  free(suite1);
+  free(suite2);
+  store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_UNSET, "store should still be running");
+  YR_ASSERT(!yr_result_store_is_closed(store));
+  yr_result_store_close(store);
+  YR_ASSERT(yr_result_store_is_closed(store));
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED, "store should now be passed");
+  yr_result_store_destroy(store);
+  free(collection);
+}
+
 int main(void)
 {
   struct yr_suite_lifecycle_callbacks suite_callbacks = {
@@ -245,7 +342,8 @@ int main(void)
   yr_test_suite_t suite = yr_create_suite_from_functions("run under store tests", NULL,
                                                          suite_callbacks,
                                                          test_run_under_store_callbacks,
-                                                         test_run_under_store_closes_subresults_only);
+                                                         test_run_under_store_closes_subresults_only,
+                                                         test_run_suite_collection_under_store);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;
