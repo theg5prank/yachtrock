@@ -243,6 +243,25 @@ static YR_TESTCASE(test_copy_description)
   yr_result_store_destroy(store);
 }
 
+static YR_TESTCASE(test_subresult_accessors)
+{
+  yr_result_store_t subresult = yr_result_store_open_subresult(GETSTORE(testcase), "subresult");
+  yr_result_store_t store1 = yr_result_store_open_subresult(subresult, "store1");
+  yr_result_store_t store2 = yr_result_store_open_subresult(subresult, "store2");
+  yr_result_store_t store3 = yr_result_store_open_subresult(subresult, "store3");
+
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(GETSTORE(testcase)), 1);
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(subresult), 3);
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(store1), 0);
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(store2), 0);
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(store3), 0);
+
+  YR_ASSERT_EQUAL(yr_result_store_get_subresult(GETSTORE(testcase), 0), subresult);
+  YR_ASSERT_EQUAL(yr_result_store_get_subresult(subresult, 0), store1);
+  YR_ASSERT_EQUAL(yr_result_store_get_subresult(subresult, 1), store2);
+  YR_ASSERT_EQUAL(yr_result_store_get_subresult(subresult, 2), store3);
+}
+
 int main(void)
 {
   struct result_store_test_context test_context;
@@ -258,7 +277,8 @@ int main(void)
                                                          test_getters,
                                                          test_enumeration,
                                                          test_hooks,
-                                                         test_copy_description);
+                                                         test_copy_description,
+                                                         test_subresult_accessors);
   suite->refcon = &test_context;
   int failures = yr_basic_run_suite(suite);
   if ( failures ) {

@@ -38,6 +38,9 @@ YACHTROCK_EXTERN yr_result_store_t yr_result_store_get_parent(yr_result_store_t 
 typedef void (*yr_result_store_enumerator_t)(yr_result_store_t subresult, void *refcon);
 YACHTROCK_EXTERN void yr_result_store_enumerate(yr_result_store_t store,
                                                 yr_result_store_enumerator_t enumerator, void *refcon);
+YACHTROCK_EXTERN size_t yr_result_store_count_subresults(yr_result_store_t store);
+YACHTROCK_EXTERN yr_result_store_t yr_result_store_get_subresult(yr_result_store_t store,
+                                                                 size_t i);
 
 YACHTROCK_EXTERN size_t yr_result_store_get_description(yr_result_store_t store, char *buf, size_t buf_size);
 YACHTROCK_EXTERN char *yr_result_store_copy_description(yr_result_store_t store);

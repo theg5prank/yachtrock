@@ -194,11 +194,27 @@ void yr_result_store_enumerate(yr_result_store_t store, yr_result_store_enumerat
   }
 }
 
+size_t yr_result_store_count_subresults(yr_result_store_t store)
+{
+  return store->subresult_count;
+}
+
+yr_result_store_t yr_result_store_get_subresult(yr_result_store_t store, size_t i)
+{
+  if ( store->subresult_count <= i ) {
+    fprintf(stderr, "index %zu too large for number of subresults %zu\n",
+            i, store->subresult_count);
+    abort();
+  }
+  return store->subresults[i];
+}
+
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf, size_t buf_size, unsigned depth);
+static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf,
+                                                     size_t buf_size, unsigned depth);
 struct _get_description_enumeration_context
 {
   char *buf;
@@ -284,3 +300,4 @@ char *yr_result_store_copy_description(yr_result_store_t store)
   yr_result_store_get_description(store, buf, necessary);
   return buf;
 }
+
