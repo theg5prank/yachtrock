@@ -72,4 +72,9 @@ typedef yr_test_suite_collection_s *yr_test_suite_collection_t;
 YACHTROCK_EXTERN yr_test_suite_collection_t
 yr_test_suite_collection_create_from_suites(size_t num_suites, yr_test_suite_t *suites);
 
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_create_from_collections(size_t num_collections,
+                                                 yr_test_suite_collection_t collection1,
+                                                 ...);
+
 #endif

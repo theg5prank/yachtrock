@@ -193,3 +193,39 @@ yr_test_suite_collection_create_from_suites(size_t num_suites, yr_test_suite_t *
   }
   return collection;
 }
+
+yr_test_suite_collection_t
+yr_test_suite_collection_create_from_collections(size_t num_collections,
+                                                 yr_test_suite_collection_t collection1,
+                                                 ...)
+{
+  // collect all collections
+  yr_test_suite_collection_t collections[num_collections];
+  collections[0] = collection1;
+  va_list ap;
+  va_start(ap, collection1);
+  for ( size_t i = 1; i < num_collections; i++ ) {
+    yr_test_suite_collection_t collection = va_arg(ap, yr_test_suite_collection_t);
+    collections[i] = collection;
+  }
+  va_end(ap);
+
+  // collect all suites
+  size_t num_suites = 0;
+  for ( size_t i = 0; i < num_collections; i++ ) {
+    num_suites += collections[i]->num_suites;
+  }
+
+  yr_test_suite_t suites[num_suites];
+  size_t suite_index = 0;
+  for ( size_t collection_index = 0; collection_index < num_collections; collection_index++ ) {
+    for ( size_t collection_suite_index = 0;
+          collection_suite_index < collections[collection_index]->num_suites;
+          collection_suite_index++ ) {
+      suites[suite_index++] = collections[collection_index]->suites[collection_suite_index];
+    }
+  }
+
+  // and now we have what we need
+  return yr_test_suite_collection_create_from_suites(num_suites, suites);
+}

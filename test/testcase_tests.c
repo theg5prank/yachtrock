@@ -151,13 +151,74 @@ YR_TESTCASE(test_collection_from_suites_more)
   free(collection);
 }
 
+static YR_TESTCASE(test_collection_from_collections)
+{
+  struct yr_suite_lifecycle_callbacks callbacks1 = {
+    .setup_case = dummy_setup_case,
+    .teardown_case = dummy_teardown_case,
+    .setup_suite = dummy_setup_suite,
+    .teardown_suite = dummy_teardown_suite,
+  };
+
+  struct yr_suite_lifecycle_callbacks callbacks2 = {
+    .setup_case = dummy_setup_case2,
+    .teardown_case = dummy_teardown_case2,
+    .setup_suite = dummy_setup_suite2,
+    .teardown_suite = dummy_teardown_suite2,
+  };
+
+  struct yr_suite_lifecycle_callbacks callbacks3 = {
+    .setup_case = dummy_setup_case,
+    .teardown_case = dummy_teardown_case2,
+    .setup_suite = dummy_setup_suite2,
+    .teardown_suite = dummy_teardown_suite,
+  };
+
+  yr_test_suite_t suite1 = yr_create_suite_from_functions("suite1",
+                                                          NULL, callbacks1,
+                                                          dummy1, dummy2, dummy3);
+  yr_test_suite_t suite2 = yr_create_suite_from_functions("suite2",
+                                                          NULL, callbacks2,
+                                                          dummy12, dummy22, dummy32);
+  yr_test_suite_t suite3 = yr_create_suite_from_functions("suite3",
+                                                          NULL, callbacks3,
+                                                          dummy12, dummy2);
+  yr_test_suite_t suite4 = yr_create_suite_from_functions("suite4",
+                                                          NULL, YR_NO_CALLBACKS,
+                                                          dummy1, dummy22, dummy32, dummy12);
+
+  yr_test_suite_t suites1[] = { suite1, suite2 };
+  yr_test_suite_t suites2[] = { suite3 };
+  yr_test_suite_t suites3[] = { suite4 };
+  yr_test_suite_collection_t collection1 = yr_test_suite_collection_create_from_suites(2, suites1);
+  yr_test_suite_collection_t collection2 = yr_test_suite_collection_create_from_suites(1, suites2);
+  yr_test_suite_collection_t collection3 = yr_test_suite_collection_create_from_suites(1, suites3);
+
+  yr_test_suite_collection_t final = yr_test_suite_collection_create_from_collections(3,
+                                                                                      collection1,
+                                                                                      collection2,
+                                                                                      collection3);
+  free(collection1);
+  free(collection2);
+  free(collection3);
+
+  yr_test_suite_t all_suites[] = {suite1, suite2, suite3, suite4};
+  YR_ASSERT_EQUAL(final->num_suites, 4);
+  for ( size_t i = 0; i < 4; i++ ) {
+    assert_suites_equal_but_independent(all_suites[i], final->suites[i]);
+    free(all_suites[i]);
+  }
+  free(final);
+}
+
 int main(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", NULL,
                                                          YR_NO_CALLBACKS,
                                                          test_create_from_functions,
                                                          test_collection_from_suites_basic,
-                                                         test_collection_from_suites_more);
+                                                         test_collection_from_suites_more,
+                                                         test_collection_from_collections);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;
