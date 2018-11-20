@@ -77,4 +77,26 @@ yr_test_suite_collection_create_from_collections(size_t num_collections,
                                                  yr_test_suite_collection_t collection1,
                                                  ...);
 
+#if YACHTROCK_DLOPEN
+
+#define YACHTROCK_MODULE_DISCOVER_NAME yr_module_create_test_suite_collection
+
+#define YACHTROCK_DISCOVER_VERSION 1
+
+struct yr_test_suite_collection_discover_response {
+  unsigned version;
+  yr_test_suite_collection_t collection;
+};
+
+typedef struct yr_test_suite_collection_discover_response
+(*yr_module_discoverer_t)(unsigned discover_version);
+
+#define YACHTROCK_DEFINE_TEST_SUITE_COLLECTION_DISCOVERER()             \
+  extern struct yr_test_suite_collection_discover_response YACHTROCK_MODULE_DISCOVER_NAME(unsigned discover_version)
+
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg);
+
+#endif
+
 #endif
