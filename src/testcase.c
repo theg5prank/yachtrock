@@ -260,17 +260,15 @@ yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
     goto out;
   }
 
-  struct yr_test_suite_collection_discover_response response = discoverer(YACHTROCK_DISCOVER_VERSION);
-  if ( response.version == YACHTROCK_DISCOVER_VERSION ) {
-    result = response.collection;
-    if ( !result ) {
-      if ( errmsg ) {
-        *errmsg = yr_strdup("discoverer returned NULL collection");
-      }
-    }
-  } else {
+  char *discover_err = NULL;
+  result = discoverer(YACHTROCK_DISCOVER_VERSION, &discover_err);
+  if ( result == NULL ) {
     if ( errmsg ) {
-      *errmsg = yr_strdup("incompatible yachtrock version");
+      if ( discover_err == NULL ) {
+        *errmsg = yr_strdup("discoverer returned NULL collection and didn't set error");
+      } else {
+        *errmsg = discover_err;
+      }
     }
   }
 
