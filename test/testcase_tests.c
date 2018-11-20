@@ -215,6 +215,8 @@ static YR_TESTCASE(test_collection_from_collections)
   free(final);
 }
 
+#if YACHTROCK_DLOPEN
+
 static YR_TESTCASE(test_collection_discovery)
 {
   struct testcase_tests_suite_context *context = testcase->suite->refcon;
@@ -246,6 +248,10 @@ static YR_TESTCASE(test_collection_discovery_fail_no_dylib)
   free(err);
 }
 
+#endif // YACHTROCK_DLOPEN
+
+static YR_TESTCASE(placeholder_test) {}
+
 int main(int argc, char **argv)
 {
   if ( argc < 2 ) {
@@ -260,8 +266,12 @@ int main(int argc, char **argv)
                                                          test_collection_from_suites_basic,
                                                          test_collection_from_suites_more,
                                                          test_collection_from_collections,
+#if YACHTROCK_DLOPEN
                                                          test_collection_discovery,
-                                                         test_collection_discovery_fail_no_dylib);
+                                                         test_collection_discovery_fail_no_dylib,
+#endif
+                                                         placeholder_test
+                                                         );
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;

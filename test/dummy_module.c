@@ -1,5 +1,7 @@
 #include <yachtrock/yachtrock.h>
 
+#if YACHTROCK_DLOPEN
+
 YR_TESTCASE(case11) {}
 YR_TESTCASE(case12) {}
 YR_TESTCASE(case21) {}
@@ -22,3 +24,5 @@ YACHTROCK_DEFINE_TEST_SUITE_COLLECTION_DISCOVERER()
 
   return response;
 }
+
+#endif
