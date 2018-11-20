@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "yrutil.h"
+
 struct yr_result_store
 {
   bool open;
@@ -33,15 +35,12 @@ static inline yr_result_t merge_result(yr_result_t old, yr_result_t new)
   case YR_RESULT_SKIPPED:
     return new;
   }
-  abort();
+  YR_RUNTIME_ASSERT(false, "unhandled result case in %s", __FUNCTION__);
 }
 
 static inline void store_mut_check(yr_result_store_t store)
 {
-  if ( !store->open ) {
-    fprintf(stderr, "mutation of closed result store requested\n");
-    abort();
-  }
+  YR_RUNTIME_ASSERT(store->open, "mutation of closed result store requested");
 }
 
 static struct yr_result_hooks *store_hook_context(yr_result_store_t store)
@@ -193,11 +192,8 @@ size_t yr_result_store_count_subresults(yr_result_store_t store)
 
 yr_result_store_t yr_result_store_get_subresult(yr_result_store_t store, size_t i)
 {
-  if ( store->subresult_count <= i ) {
-    fprintf(stderr, "index %zu too large for number of subresults %zu\n",
-            i, store->subresult_count);
-    abort();
-  }
+  YR_RUNTIME_ASSERT(store->subresult_count > i, "index %zu too large for number of subresults %zu",
+                    i, store->subresult_count);
   return store->subresults[i];
 }
 
@@ -231,11 +227,8 @@ static size_t _yr_result_store_get_description_depth(yr_result_store_t store, ch
 {
   char _;
   if ( buf == NULL ) {
-    if ( buf_size > 0 ) {
-      // don't hide a bug by mistake
-      fprintf(stderr, "don't try to write store description into a NULL pointer\n");
-      abort();
-    }
+    // don't hide a bug by mistake
+    YR_RUNTIME_ASSERT(buf_size == 0, "don't try to write store description into a NULL pointer");
     // don't pass NULL to snprintf
     buf = &_;
   }
