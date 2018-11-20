@@ -27,11 +27,11 @@ static void _init_opened_suite_except_store(struct opened_testsuite *collection,
   }
 }
 static struct opened_testsuite *open_suite(yr_test_suite_t suite, struct yr_result_callbacks callbacks,
-                                           struct yr_result_hooks result_hooks, void *result_refcon)
+                                           struct yr_result_hooks result_hooks)
 {
   struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
   _init_opened_suite_except_store(collection, suite, callbacks);
-  collection->store = yr_result_store_create_with_hooks(suite->name, result_hooks, result_refcon);
+  collection->store = yr_result_store_create_with_hooks(suite->name, result_hooks);
   collection->owns_result_store = true;
   collection->current_case_store = NULL;
   return collection;
@@ -144,12 +144,13 @@ int yr_basic_run_suite(yr_test_suite_t suite)
     .note_skipped = basic_run_suite_note_skipped,
     .refcon = NULL,
   };
+  struct basic_result_store_hooks_refcon store_hooks_context;
   struct yr_result_hooks basic_hooks = {
     .store_opened = yr_basic_store_opened_callback,
     .store_closed = yr_basic_store_closed_callback,
+    .context = &store_hooks_context,
   };
-  struct basic_result_store_hooks_refcon store_hooks_context;
-  return yr_run_suite_with_result_hooks(suite, basic_hooks, &store_hooks_context,
+  return yr_run_suite_with_result_hooks(suite, basic_hooks,
                                         result_callbacks);
 }
 
@@ -212,7 +213,6 @@ static int _yr_run_suite_with_result_hooks_with_testsuite_opener(yr_test_suite_t
 struct yr_run_suite_with_result_hooks_opener_context
 {
   struct yr_result_hooks hooks;
-  void *result_hook_refcon;
 };
 static struct opened_testsuite *
 _yr_run_suite_with_result_hooks_opener(yr_test_suite_t suite,
@@ -220,15 +220,13 @@ _yr_run_suite_with_result_hooks_opener(yr_test_suite_t suite,
                                        void *refcon)
 {
   struct yr_run_suite_with_result_hooks_opener_context *context = refcon;
-  return open_suite(suite, result_callbacks, context->hooks, context->result_hook_refcon);
+  return open_suite(suite, result_callbacks, context->hooks);
 }
 int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
-                                   void *result_hook_refcon,
                                    struct yr_result_callbacks provided_result_callbacks)
 {
   struct yr_run_suite_with_result_hooks_opener_context opener_context;
   opener_context.hooks = hooks;
-  opener_context.result_hook_refcon = result_hook_refcon;
   return _yr_run_suite_with_result_hooks_with_testsuite_opener(suite,
                                                                provided_result_callbacks,
                                                                &opener_context,

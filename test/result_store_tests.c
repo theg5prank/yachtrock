@@ -155,8 +155,9 @@ void test_hooks(void)
   hooks.store_opened = test_store_opened_callback;
   hooks.store_closed = test_store_closed_callback;
   hooks.store_result_changed = test_store_result_changed_callback;
+  hooks.context = &refcon;
 
-  yr_result_store_t store = yr_result_store_create_with_hooks("parent", hooks, &refcon);
+  yr_result_store_t store = yr_result_store_create_with_hooks("parent", hooks);
   YR_ASSERT(refcon.new_store == store);
   YR_ASSERT(refcon.closed_store == NULL);
   YR_ASSERT(refcon.changed_store == NULL);

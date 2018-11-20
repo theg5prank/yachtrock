@@ -14,13 +14,7 @@ struct yr_result_store
   size_t subresult_size;
   yr_result_store_t *subresults;
   yr_result_store_t parent;
-  struct yr_result_hook_context *hook_context;
-};
-
-struct yr_result_hook_context
-{
-  struct yr_result_hooks hooks;
-  void *refcon;
+  struct yr_result_hooks *hooks;
 };
 
 static inline yr_result_t merge_result(yr_result_t old, yr_result_t new)
@@ -50,11 +44,11 @@ static inline void store_mut_check(yr_result_store_t store)
   }
 }
 
-static struct yr_result_hook_context *store_hook_context(yr_result_store_t store)
+static struct yr_result_hooks *store_hook_context(yr_result_store_t store)
 {
   while ( store ) {
-    if ( store->hook_context ) {
-      return store->hook_context;
+    if ( store->hooks ) {
+      return store->hooks;
     }
     store = store->parent;
   }
@@ -62,11 +56,11 @@ static struct yr_result_hook_context *store_hook_context(yr_result_store_t store
 }
 
 #define CALL_HOOK(store, hook_name) do {                                \
-    struct yr_result_hook_context *hook_context = store_hook_context((store)); \
+    struct yr_result_hooks *hook_context = store_hook_context((store)); \
     if ( hook_context &&                                                \
-         hook_context->hooks.hook_name ) {                              \
-      hook_context->hooks.hook_name((store),                            \
-                                    hook_context->refcon);              \
+         hook_context->hook_name ) {                                    \
+      hook_context->hook_name((store),                                  \
+                              hook_context->context);                   \
     }                                                                   \
   } while (0)
 
@@ -84,20 +78,18 @@ static void yr_result_store_init(const char *name, yr_result_store_t store)
   store->subresult_size = 0;
   store->subresults = NULL;
   store->parent = NULL;
-  store->hook_context = NULL;
+  store->hooks = NULL;
 }
 
 yr_result_store_t yr_result_store_create_with_hooks(const char *name,
-                                                    struct yr_result_hooks hooks,
-                                                    void *refcon)
+                                                    struct yr_result_hooks hooks)
 {
   yr_result_store_t retval = malloc(sizeof(struct yr_result_store));
   yr_result_store_init(name, retval);
-  retval->hook_context = malloc(sizeof(struct yr_result_hook_context));
-  retval->hook_context->hooks = hooks;
-  retval->hook_context->refcon = refcon;
+  retval->hooks = malloc(sizeof(struct yr_result_hooks));
+  *(retval->hooks) = hooks;
   if ( hooks.store_opened ) {
-    hooks.store_opened(retval, refcon);
+    hooks.store_opened(retval, hooks.context);
   }
   return retval;
 }
@@ -116,7 +108,7 @@ void yr_result_store_destroy(yr_result_store_t store)
   }
   free(store->subresults);
   free(/* const cast */(void *)store->name);
-  free(store->hook_context);
+  free(store->hooks);
   free(store);
 }
 

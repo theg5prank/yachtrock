@@ -16,6 +16,7 @@ typedef struct yr_result_store yr_result_store_s;
 typedef yr_result_store_s *yr_result_store_t;
 
 struct yr_result_hooks {
+  void *context;
   void (*store_opened)(yr_result_store_t new_store, void *refcon);
   void (*store_closed)(yr_result_store_t closed_store, void *refcon);
   void (*store_result_changed)(yr_result_store_t store, void *refcon);
@@ -23,8 +24,7 @@ struct yr_result_hooks {
 
 YACHTROCK_EXTERN yr_result_store_t yr_result_store_create(const char *name);
 YACHTROCK_EXTERN yr_result_store_t yr_result_store_create_with_hooks(const char *name,
-                                                                     struct yr_result_hooks hooks,
-                                                                     void *hook_refcon);
+                                                                     struct yr_result_hooks hooks);
 YACHTROCK_EXTERN void yr_result_store_destroy(yr_result_store_t store);
 
 YACHTROCK_EXTERN void yr_result_store_close(yr_result_store_t store);

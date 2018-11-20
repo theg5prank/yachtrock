@@ -144,14 +144,15 @@ static void setup_store_and_suite(yr_test_case_t testcase)
                                                   dummy1,
                                                   dummy2,
                                                   dummy3);
+  context->store_context = malloc(sizeof(struct run_under_result_store_store_context));
+  *(context->store_context) = (struct run_under_result_store_store_context){0};
   struct yr_result_hooks store_hooks;
   store_hooks.store_opened = store_opened_callback;
   store_hooks.store_closed = store_closed_callback;
   store_hooks.store_result_changed = store_changed_callback;
-  context->store_context = malloc(sizeof(struct run_under_result_store_store_context));
-  *(context->store_context) = (struct run_under_result_store_store_context){0};
+  store_hooks.context = context->store_context;
   context->store = yr_result_store_create_with_hooks("root store",
-                                                     store_hooks, context->store_context);
+                                                     store_hooks);
   ((struct yr_test_suite *)testcase->suite)->refcon = context;
 }
 static void teardown_store_and_suite(yr_test_case_t testcase)
