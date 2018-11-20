@@ -30,12 +30,13 @@ CSRC += $(LIBYACHTROCK_TESTSRC)
 LIBYACHTROCK_OBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_SRC)))
 LIBYACHTROCK_TESTOBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_TESTSRC)))
 LIBYACHTROCK_TESTS = $(patsubst %.o,%,$(LIBYACHTROCK_TESTOBJ))
-LIBYACHTROCK_LINKS =
+LIBYACHTROCK_LINKS = -ldl
 LIBYACHTROCK_TESTSUPPORT =
 
 $(LIBYACHTROCK_STATIC_SRC): $(LIBYACHTROCK_GENERATED_SRC)
 
-$(LIBYACHTROCK_OBJ): CFLAGS += -fPIC
+$(LIBYACHTROCK_OBJ): CFLAGS += -fPIC -D_POSIX_C_SOURCE=200809L
+$(LIBYACHTROCK_TESTOBJ): CFLAGS += -D_POSIX_C_SOURCE=200809L
 
 test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase test_libyachtrock_run_under_store
 
@@ -45,6 +46,7 @@ test_libyachtrock_%: libyachtrock_%_tests_success
 libyachtrock_%_tests_success: $(LIBYACHTROCK_DIR)test/%_tests
 	./$<
 
+$(LIBYACHTROCK_DIR)test/dummy_module.o: CFLAGS += -fPIC
 ifeq ($(UNAME_S),Darwin)
 $(LIBYACHTROCK_DIR)test/dummy_module.dylib: $(LIBYACHTROCK_DIR)test/dummy_module.o $(LIBYACHTROCK_ARNAME)
 	$(CC) -dynamiclib $^ -o $@
