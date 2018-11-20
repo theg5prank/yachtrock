@@ -113,11 +113,12 @@ typedef yr_test_suite_collection_t
   YACHTROCK_MODULE_DISCOVER_NAME ## __impl(unsigned discover_version,   \
                                            char **errmsg)
 
-    
-
 
 YACHTROCK_EXTERN yr_test_suite_collection_t
 yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg);
+
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_load_from_handle(void *handle, char **errmsg);
 
 #endif
 

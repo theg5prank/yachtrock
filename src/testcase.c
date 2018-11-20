@@ -252,6 +252,19 @@ yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
     goto out;
   }
 
+  result = yr_test_suite_collection_load_from_handle(handle, errmsg);
+
+ out:
+  if ( !result && handle ) {
+    dlclose(handle);
+  }
+  return result;
+}
+
+yr_test_suite_collection_t
+yr_test_suite_collection_load_from_handle(void *handle, char **errmsg)
+{
+  yr_test_suite_collection_t result = NULL;
   yr_module_discoverer_t discoverer = dlsym(handle, discoverer_sym);
   if ( !discoverer ) {
     if ( errmsg ) {
@@ -271,11 +284,7 @@ yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
       }
     }
   }
-
  out:
-  if ( !result && handle ) {
-    dlclose(handle);
-  }
   return result;
 }
 
