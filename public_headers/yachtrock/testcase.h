@@ -4,6 +4,9 @@
 #include <yachtrock/base.h>
 
 #include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 struct yr_test_suite;
 typedef struct yr_test_suite yr_test_suite_s;
@@ -76,5 +79,47 @@ YACHTROCK_EXTERN yr_test_suite_collection_t
 yr_test_suite_collection_create_from_collections(size_t num_collections,
                                                  yr_test_suite_collection_t collection1,
                                                  ...);
+
+#if YACHTROCK_DLOPEN
+
+#define YACHTROCK_MODULE_DISCOVER_NAME yr_module_create_test_suite_collection
+
+#define YACHTROCK_DISCOVER_VERSION 1
+
+typedef yr_test_suite_collection_t
+(*yr_module_discoverer_t)(unsigned discover_version, char **errmsg);
+
+#define YACHTROCK_DEFINE_TEST_SUITE_COLLECTION_DISCOVERER()             \
+  static yr_test_suite_collection_t                                     \
+  YACHTROCK_MODULE_DISCOVER_NAME ## __impl(unsigned discover_version,   \
+                                           char **errmsg);              \
+  extern yr_test_suite_collection_t YACHTROCK_MODULE_DISCOVER_NAME(unsigned discover_version, \
+                                                                   char **errmsg) \
+  {                                                                     \
+    if ( discover_version > YACHTROCK_DISCOVER_VERSION ) {              \
+      char _;                                                           \
+      char *fmt = "Discover version %d is greater than supported version %d"; \
+      int required = snprintf(&_, 0, fmt, discover_version,             \
+                              YACHTROCK_DISCOVER_VERSION) + 1;          \
+      *errmsg = malloc(required);                                       \
+      snprintf(*errmsg, required, fmt, discover_version,                \
+               YACHTROCK_DISCOVER_VERSION);                             \
+      return NULL;                                                      \
+    }                                                                   \
+    return (YACHTROCK_MODULE_DISCOVER_NAME ## __impl)(discover_version, \
+                                                      errmsg);          \
+  }                                                                     \
+  static yr_test_suite_collection_t                                     \
+  YACHTROCK_MODULE_DISCOVER_NAME ## __impl(unsigned discover_version,   \
+                                           char **errmsg)
+
+
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg);
+
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_load_from_handle(void *handle, char **errmsg);
+
+#endif
 
 #endif

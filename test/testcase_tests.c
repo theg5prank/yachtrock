@@ -3,6 +3,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#if YACHTROCK_DLOPEN
+#include <dlfcn.h>
+#endif
+
+struct testcase_tests_suite_context {
+  const char *dummy_module_path;
+};
+
 void dummy1(yr_test_case_t tc) {}
 void dummy2(yr_test_case_t tc) {}
 void dummy3(yr_test_case_t tc) {}
@@ -211,14 +219,87 @@ static YR_TESTCASE(test_collection_from_collections)
   free(final);
 }
 
-int main(void)
+#if YACHTROCK_DLOPEN
+
+static YR_TESTCASE(test_collection_discovery)
 {
-  yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", NULL,
+  struct testcase_tests_suite_context *context = testcase->suite->refcon;
+  char *err = NULL;
+  yr_test_suite_collection_t collection =
+    yr_test_suite_collection_load_from_dylib_path(context->dummy_module_path,
+                                                  &err);
+  YR_ASSERT(collection != NULL, "didn't get collection, error is %s", err);
+  YR_ASSERT_EQUAL(collection->num_suites, 2);
+  YR_ASSERT_EQUAL(collection->suites[0]->num_cases, 2);
+  YR_ASSERT_EQUAL(collection->suites[1]->num_cases, 2);
+
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  yr_result_store_close(store);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
+  yr_result_store_destroy(store);
+  free(collection);
+}
+
+static YR_TESTCASE(test_collection_discovery_handle)
+{
+  struct testcase_tests_suite_context *context = testcase->suite->refcon;
+  char *err = NULL;
+  void *handle = dlopen(context->dummy_module_path, RTLD_LAZY);
+  YR_ASSERT(handle != NULL, "Couldn't load handle: %s", dlerror());
+  yr_test_suite_collection_t collection =
+    yr_test_suite_collection_load_from_handle(handle,
+                                              &err);
+  YR_ASSERT(collection != NULL, "Didn't get collection, error is %s", err);
+  YR_ASSERT_EQUAL(collection->num_suites, 2);
+  YR_ASSERT_EQUAL(collection->suites[0]->num_cases, 2);
+  YR_ASSERT_EQUAL(collection->suites[1]->num_cases, 2);
+
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  yr_result_store_close(store);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
+  yr_result_store_destroy(store);
+  free(collection);
+  dlclose(handle);
+}
+
+static YR_TESTCASE(test_collection_discovery_fail_no_dylib)
+{
+  char *err = NULL;
+  yr_test_suite_collection_t collection =
+    yr_test_suite_collection_load_from_dylib_path("nope.dylib",
+                                                  &err);
+  YR_ASSERT_EQUAL(collection, NULL);
+  YR_ASSERT(err != NULL);
+  free(err);
+}
+
+#endif // YACHTROCK_DLOPEN
+
+static YR_TESTCASE(placeholder_test) {}
+
+int main(int argc, char **argv)
+{
+  if ( argc < 2 ) {
+    fprintf(stderr, "not passed dummy module name?\n");
+    abort();
+  }
+  struct testcase_tests_suite_context context;
+  context.dummy_module_path = argv[1];
+  yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", &context,
                                                          YR_NO_CALLBACKS,
                                                          test_create_from_functions,
                                                          test_collection_from_suites_basic,
                                                          test_collection_from_suites_more,
-                                                         test_collection_from_collections);
+                                                         test_collection_from_collections,
+#if YACHTROCK_DLOPEN
+                                                         test_collection_discovery,
+                                                         test_collection_discovery_handle,
+                                                         test_collection_discovery_fail_no_dylib,
+#endif
+                                                         placeholder_test
+                                                         );
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;

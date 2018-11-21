@@ -7,6 +7,12 @@
 #include <string.h>
 #include <stdalign.h>
 
+#if YACHTROCK_DLOPEN
+#include <dlfcn.h>
+#endif
+
+#include "yrutil.h"
+
 const struct yr_suite_lifecycle_callbacks YR_NO_CALLBACKS = {0};
 
 static bool isdelim(int c)
@@ -229,3 +235,57 @@ yr_test_suite_collection_create_from_collections(size_t num_collections,
   // and now we have what we need
   return yr_test_suite_collection_create_from_suites(num_suites, suites);
 }
+
+#if YACHTROCK_DLOPEN
+
+static const char discoverer_sym[] = YR_XSTR(YACHTROCK_MODULE_DISCOVER_NAME);
+
+yr_test_suite_collection_t
+yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
+{
+  yr_test_suite_collection_t result = NULL;
+  void *handle = dlopen(path, RTLD_LAZY);
+  if ( !handle ) {
+    if ( errmsg ) {
+      *errmsg = yr_strdup(dlerror());
+    }
+    goto out;
+  }
+
+  result = yr_test_suite_collection_load_from_handle(handle, errmsg);
+
+ out:
+  if ( !result && handle ) {
+    dlclose(handle);
+  }
+  return result;
+}
+
+yr_test_suite_collection_t
+yr_test_suite_collection_load_from_handle(void *handle, char **errmsg)
+{
+  yr_test_suite_collection_t result = NULL;
+  yr_module_discoverer_t discoverer = dlsym(handle, discoverer_sym);
+  if ( !discoverer ) {
+    if ( errmsg ) {
+      *errmsg = yr_strdup(dlerror());
+    }
+    goto out;
+  }
+
+  char *discover_err = NULL;
+  result = discoverer(YACHTROCK_DISCOVER_VERSION, &discover_err);
+  if ( result == NULL ) {
+    if ( errmsg ) {
+      if ( discover_err == NULL ) {
+        *errmsg = yr_strdup("discoverer returned NULL collection and didn't set error");
+      } else {
+        *errmsg = discover_err;
+      }
+    }
+  }
+ out:
+  return result;
+}
+
+#endif
