@@ -6,6 +6,9 @@
 #include <yachtrock/testcase.h>
 #include <yachtrock/results.h>
 
+YACHTROCK_EXTERN struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS;
+YACHTROCK_EXTERN struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS;
+
 YACHTROCK_EXTERN int yr_basic_run_suite(yr_test_suite_t suite);
 YACHTROCK_EXTERN int yr_run_suite_with_result_hooks(yr_test_suite_t suite,
                                                     struct yr_result_hooks hooks,

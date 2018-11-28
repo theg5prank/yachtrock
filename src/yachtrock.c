@@ -103,9 +103,6 @@ static void basic_run_suite_note_skipped(const char *file, size_t line, const ch
   fprintf(stderr, "Skipping test (%s:%zu, in %s): %s\n", file, line, funname, desc);
 }
 
-struct basic_result_store_hooks_refcon
-{
-};
 static void yr_basic_store_opened_callback(yr_result_store_t store, void *refcon)
 {
   if ( yr_result_store_get_parent(store) == NULL ) {
@@ -138,21 +135,22 @@ static void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon
   }
 }
 
+struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS = {
+  .note_assertion_failed = basic_run_suite_note_assertion_failed,
+  .note_skipped = basic_run_suite_note_skipped,
+  .refcon = NULL
+};
+
+struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS = {
+  .store_opened = yr_basic_store_opened_callback,
+  .store_closed = yr_basic_store_closed_callback,
+  .context = NULL
+};
+
 int yr_basic_run_suite(yr_test_suite_t suite)
 {
-  struct yr_runtime_callbacks runtime_callbacks = {
-    .note_assertion_failed = basic_run_suite_note_assertion_failed,
-    .note_skipped = basic_run_suite_note_skipped,
-    .refcon = NULL,
-  };
-  struct basic_result_store_hooks_refcon store_hooks_context;
-  struct yr_result_hooks basic_hooks = {
-    .store_opened = yr_basic_store_opened_callback,
-    .store_closed = yr_basic_store_closed_callback,
-    .context = &store_hooks_context,
-  };
-  return yr_run_suite_with_result_hooks(suite, basic_hooks,
-                                        runtime_callbacks);
+  return yr_run_suite_with_result_hooks(suite, YR_BASIC_STDERR_RESULT_HOOKS,
+                                        YR_BASIC_STDERR_RUNTIME_CALLBACKS);
 }
 
 struct run_suite_with_result_hooks_runtime_context
