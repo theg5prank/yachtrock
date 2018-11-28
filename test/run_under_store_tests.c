@@ -192,8 +192,8 @@ static YR_TESTCASE(test_run_under_store_callbacks)
   YR_ASSERT_FALSE(suite_context->dummy3_seen_case);
   YR_ASSERT_FALSE(suite_context->dummy3_seen_closed_hook);
 
-  struct yr_result_callbacks result_callbacks = {0};
-  yr_run_suite_under_store(context->suite, context->store, result_callbacks);
+  struct yr_runtime_callbacks runtime_callbacks = {0};
+  yr_run_suite_under_store(context->suite, context->store, runtime_callbacks);
 
   YR_ASSERT(store_context->dummy1_seen_open);
   YR_ASSERT(store_context->dummy1_seen_pass);
@@ -230,8 +230,8 @@ static void _yr_enumerate_subresults_assert_closed(yr_result_store_t subresult, 
 static YR_TESTCASE(test_run_under_store_closes_subresults_only)
 {
   struct store_and_suite_context *context = testcase->suite->refcon;
-  struct yr_result_callbacks result_callbacks = {0};
-  yr_run_suite_under_store(context->suite, context->store, result_callbacks);
+  struct yr_runtime_callbacks runtime_callbacks = {0};
+  yr_run_suite_under_store(context->suite, context->store, runtime_callbacks);
   YR_ASSERT_FALSE(yr_result_store_is_closed(context->store));
   unsigned visited = 0;
   yr_result_store_enumerate(context->store, _yr_enumerate_subresults_assert_closed, &visited);
@@ -294,7 +294,7 @@ static YR_TESTCASE(test_run_suite_collection_under_store)
   free(suite3);
 
   yr_result_store_t store = yr_result_store_create(__FUNCTION__);
-  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  yr_run_suite_collection_under_store(collection, store, (struct yr_runtime_callbacks){0});
 
   YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_FAILED, "failures should have percolated");
   YR_ASSERT_EQUAL(suite2_context, 0xDEADBEEF, "tests should have actually run");
@@ -325,7 +325,7 @@ static YR_TESTCASE(test_run_suite_collection_under_store)
   free(suite1);
   free(suite2);
   store = yr_result_store_create(__FUNCTION__);
-  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  yr_run_suite_collection_under_store(collection, store, (struct yr_runtime_callbacks){0});
   YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_UNSET, "store should still be running");
   YR_ASSERT(!yr_result_store_is_closed(store));
   yr_result_store_close(store);

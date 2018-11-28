@@ -9,13 +9,13 @@
 YACHTROCK_EXTERN int yr_basic_run_suite(yr_test_suite_t suite);
 YACHTROCK_EXTERN int yr_run_suite_with_result_hooks(yr_test_suite_t suite,
                                                     struct yr_result_hooks hooks,
-                                                    struct yr_result_callbacks result_callbacks);
+                                                    struct yr_runtime_callbacks runtime_callbacks);
 
 YACHTROCK_EXTERN void yr_run_suite_under_store(yr_test_suite_t suite,
                                                yr_result_store_t store,
-                                               struct yr_result_callbacks result_callbacks);
+                                               struct yr_runtime_callbacks runtime_callbacks);
 YACHTROCK_EXTERN void yr_run_suite_collection_under_store(yr_test_suite_collection_t collection,
                                                           yr_result_store_t store,
-                                                          struct yr_result_callbacks result_callbacks);
+                                                          struct yr_runtime_callbacks runtime_callbacks);
 
 #endif

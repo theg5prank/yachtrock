@@ -234,7 +234,7 @@ static YR_TESTCASE(test_collection_discovery)
   YR_ASSERT_EQUAL(collection->suites[1]->num_cases, 2);
 
   yr_result_store_t store = yr_result_store_create(__FUNCTION__);
-  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  yr_run_suite_collection_under_store(collection, store, (struct yr_runtime_callbacks){0});
   yr_result_store_close(store);
   YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
   yr_result_store_destroy(store);
@@ -256,7 +256,7 @@ static YR_TESTCASE(test_collection_discovery_handle)
   YR_ASSERT_EQUAL(collection->suites[1]->num_cases, 2);
 
   yr_result_store_t store = yr_result_store_create(__FUNCTION__);
-  yr_run_suite_collection_under_store(collection, store, (struct yr_result_callbacks){0});
+  yr_run_suite_collection_under_store(collection, store, (struct yr_runtime_callbacks){0});
   yr_result_store_close(store);
   YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
   yr_result_store_destroy(store);

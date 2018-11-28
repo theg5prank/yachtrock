@@ -18,22 +18,22 @@ static void beartrap_note_test_skipped(const char *file, size_t line, const char
   YR_RUNTIME_ASSERT(false, "test skipped handler: callbacks not configured");
 }
 
-struct yr_result_callbacks current_callbacks = {
+struct yr_runtime_callbacks current_callbacks = {
   .refcon = NULL,
   .note_assertion_failed = beartrap_note_assertion_failed,
   .note_skipped = beartrap_note_test_skipped,
 };
 
-static void validate_callbacks(struct yr_result_callbacks callbacks)
+static void validate_callbacks(struct yr_runtime_callbacks callbacks)
 {
   YR_RUNTIME_ASSERT(callbacks.note_assertion_failed != NULL, "assertion failure handler cannot be NULL");
   YR_RUNTIME_ASSERT(callbacks.note_skipped != NULL, "test skipped handler cannot be NULL");
 }
 
-struct yr_result_callbacks yr_set_result_callbacks(struct yr_result_callbacks callbacks)
+struct yr_runtime_callbacks yr_set_runtime_callbacks(struct yr_runtime_callbacks callbacks)
 {
   validate_callbacks(callbacks);
-  struct yr_result_callbacks old = current_callbacks;
+  struct yr_runtime_callbacks old = current_callbacks;
   current_callbacks = callbacks;
   return old;
 }
