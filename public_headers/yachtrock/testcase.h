@@ -79,6 +79,10 @@ YACHTROCK_EXTERN yr_test_suite_collection_t
 yr_test_suite_collection_create_from_collections(size_t num_collections,
                                                  yr_test_suite_collection_t collection1,
                                                  ...);
+YACHTROCK_EXTERN yr_test_suite_collection_t
+yr_test_suite_collection_create_from_collection_array(size_t num_collections,
+                                                       yr_test_suite_collection_t *collections);
+
 
 #if YACHTROCK_DLOPEN
 
