@@ -69,6 +69,9 @@ int main(int argc, char **argv)
 
   yr_result_t result = yr_result_store_get_result(store);
 
+  yr_result_store_destroy(store);
+  free(final_collection);
+
   return result == YR_RESULT_PASSED ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 

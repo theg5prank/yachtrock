@@ -1,12 +1,13 @@
-#include <yachtrock/yachtrock.h>
-
-#if YACHTROCK_POSIXY
-
 #if __APPLE__
 // for SO_NOSIGPIPE
 #define _DARWIN_C_SOURCE 1
 #endif
 
+#include <yachtrock/yachtrock.h>
+
+#if YACHTROCK_POSIXY
+
+#include <signal.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -155,7 +156,7 @@ static int spawn_inferior(char *path, char **argv, char **environ,
   }
 
   pid_t pid;
-  result = posix_spawn(&pid, path, &file_actions, NULL, argv, new_environ);
+  result = posix_spawnp(&pid, path, &file_actions, NULL, argv, new_environ);
 
   if ( result != 0 ) {
     warnc(result, "posix_spawn failed");
@@ -185,8 +186,22 @@ static int spawn_inferior(char *path, char **argv, char **environ,
   return result;
 }
 
-static bool receive_length(int sock, void *buf, size_t len, struct timeval *timeout)
+enum recv_length_flags {
+  RECV_LENGTH_DRAIN = 1 << 0
+};
+
+
+static bool recv_length(int sock, void *buf, size_t len, struct timeval *timeout, int flags)
 {
+  static const size_t drainbuf_len = 0x1000;
+  bool drain = (flags & RECV_LENGTH_DRAIN) != 0;
+  char drainbuf[drain ? drainbuf_len : 1];
+
+  if ( drain ) {
+    buf = drainbuf;
+    len = drainbuf_len;
+  }
+
   size_t received = 0;
   while ( received < len ) {
     fd_set set;
@@ -206,10 +221,17 @@ static bool receive_length(int sock, void *buf, size_t len, struct timeval *time
       warn("recv failed");
       return false;
     } else if ( receive_iter == 0 ) {
-      warnx("recv returned zero bytes");
-      return false;
+      if ( drain ) {
+        return true;
+      } else {
+        warnx("recv returned zero bytes");
+        return false;
+      }
     }
-    received += receive_iter;
+
+    if ( !drain ) {
+      received += receive_iter;
+    }
   }
   return true;
 }
@@ -250,7 +272,7 @@ static bool send_length(int sock, const void *buf, size_t len, struct timeval *t
 static bool recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeout)
 {
   char buf[4];
-  bool ok = receive_length(sock, buf, sizeof(buf), timeout);
+  bool ok = recv_length(sock, buf, sizeof(buf), timeout, 0);
   if ( !ok ) {
     return false;
   }
@@ -266,11 +288,13 @@ static bool send_uint32(int sock, uint32_t in, struct timeval *timeout)
   return send_length(sock, &tmp, sizeof(tmp), timeout);
 }
 
-static bool inferior_handle_command(int sock, uint32_t command)
+static bool inferior_handle_command(int sock, uint32_t command,
+                                    yr_test_suite_collection_t collection,
+                                    struct yr_runtime_callbacks runtime_callbacks)
 {
   switch ( command ) {
   case MESSAGE_TERMINATE:
-    warnx("terminating cleanly per superior instruction");
+    warnx("inferior terminating cleanly per superior instruction");
     exit(0);
   default:
     warnx("unknown command %ld", (long)command);
@@ -278,7 +302,8 @@ static bool inferior_handle_command(int sock, uint32_t command)
   }
 }
 
-static void inferior_loop(void)
+static void inferior_loop(yr_test_suite_collection_t collection,
+                          struct yr_runtime_callbacks runtime_callbacks)
 {
   int sock = inferior_socket();
   while ( 1 ) {
@@ -287,10 +312,31 @@ static void inferior_loop(void)
     if ( !ok ) {
       errx(EX_SOFTWARE, "inferior exiting due to error");
     }
-    ok = inferior_handle_command(sock, command);
+    ok = inferior_handle_command(sock, command, collection, runtime_callbacks);
     if ( !ok ) {
       errx(EX_SOFTWARE, "failed to handle command");
     }
+  }
+}
+
+static void drain_inferior_best_effort(struct spawn_result inferior_info)
+{
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+  char buf[4096];
+  bool drained = recv_length(inferior_info.socket, buf, sizeof(buf), &timeout, RECV_LENGTH_DRAIN);
+  // if we drained the inferior is on the exit path so we can wait
+  int wait_flags = drained ? 0 : WNOHANG;
+  int stat_loc;
+  int result = waitpid(inferior_info.pid, &stat_loc, wait_flags);
+  if ( result == 0 ) {
+    warnx("inferior not dead yet, forcibly killing");
+    kill(inferior_info.pid, SIGKILL);
+    result = waitpid(inferior_info.pid, &stat_loc, 0);
+  }
+  if ( result < 0 ) {
+    warn("waitpid failed");
   }
 }
 
@@ -303,6 +349,10 @@ static bool spawn_inferior_checking_collection(char *path, char **argv, char **e
 
   ok = ok && send_uint32(tmp_spawn_result.socket, MESSAGE_TERMINATE, NULL);
 
+  if ( ok && out_result ) {
+    *out_result = tmp_spawn_result;
+  }
+
   return ok;
 }
 
@@ -313,14 +363,19 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
                                                  struct yr_runtime_callbacks runtime_callbacks)
 {
   if ( yr_process_is_inferior() ) {
-    inferior_loop();
+    inferior_loop(collection, runtime_callbacks);
     abort(); // unreachable
   }
   struct spawn_result spawn_result;
   bool ok = spawn_inferior_checking_collection(path, argv, environ, collection, &spawn_result);
 
   if ( !ok ) {
-    warn("failed to spawn and check collection");
+    warnx("failed to spawn and check collection");
+  }
+
+  // if we're still OK at this point, be a good boy and attempt to reap our child
+  if ( ok ) {
+    drain_inferior_best_effort(spawn_result);
   }
 }
 
