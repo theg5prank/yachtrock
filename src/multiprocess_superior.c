@@ -1,0 +1,52 @@
+#include <yachtrock/yachtrock.h>
+
+#if YACHTROCK_POSIXY
+
+#include <sys/wait.h>
+#include <err.h>
+#include <signal.h>
+
+#include "multiprocess_superior.h"
+
+static void drain_inferior_best_effort(struct inferior_handle inferior_info)
+{
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+  char buf[4096];
+  bool drained = yr_recv_length(inferior_info.socket, buf, sizeof(buf), &timeout, RECV_LENGTH_DRAIN);
+  // if we drained the inferior is on the exit path so we can wait
+  int wait_flags = drained ? 0 : WNOHANG;
+  int stat_loc;
+  int result = waitpid(inferior_info.pid, &stat_loc, wait_flags);
+  if ( result == 0 ) {
+    warnx("inferior not dead yet, forcibly killing");
+    kill(inferior_info.pid, SIGKILL);
+    result = waitpid(inferior_info.pid, &stat_loc, 0);
+  }
+  if ( result < 0 ) {
+    warn("waitpid failed");
+  }
+}
+
+static bool check_collection(struct inferior_handle inferior,
+                             yr_test_suite_collection_t collection)
+{
+  return yr_send_uint32(inferior.socket, MESSAGE_TERMINATE, NULL);
+}
+
+void yr_handle_run_multiprocess(struct inferior_handle inferior,
+                                yr_test_suite_collection_t collection,
+                                yr_result_store_t store,
+                                struct yr_runtime_callbacks runtime_callbacks)
+{
+  bool ok = check_collection(inferior, collection);
+  // if we're still OK at this point, be a good boy and attempt to reap our child
+  if ( ok ) {
+    drain_inferior_best_effort(inferior);
+  }
+}
+
+
+
+#endif // YACHTROCK_POSIXY

@@ -18,7 +18,7 @@ MODULE_CLEANS += clean_libyachtrock
 
 LIBYACHTROCK_GENERATED_SRC := 
 LIBYACHTROCK_GENERATED_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_GENERATED_SRC))
-LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c yrutil.c multiprocess.c
+LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c yrutil.c multiprocess.c multiprocess_inferior.c multiprocess_superior.c
 LIBYACHTROCK_STATIC_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_STATIC_SRC))
 YR_RUNTESTS_SRC := yr_runtests.c
 YR_RUNTESTS_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(YR_RUNTESTS_SRC))

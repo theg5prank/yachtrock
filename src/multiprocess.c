@@ -22,25 +22,9 @@
 #include <assert.h>
 
 #include "yrutil.h"
-
-/*
- * Message format: msg_code[1] payload_len[4] payload[payload_len]
- */
-enum yr_inferior_message {
-  /* Payload format: {} */
-  MESSAGE_REQUEST_COLLECTION_DESC,
-  /* Payload format: num_suites[4] (suite * num_suites)
-   * suite: suite_name_len[4], suite_name[suite_len], num_cases[4], (testcase * num_cases)
-   * testcase: testcase_name_len[4], testcase_name[testcase_name_len]
-   */
-  MESSAGE_PROVIDE_COLLECTION_DESC,
-  /* Payload format: suiteid[4], caseid[4] */
-  MESSAGE_INVOKE_CASE,
-  /* Payload format: suiteid[4], caseid[4], result[1] */
-  MESSAGE_CASE_RESULT,
-  /* Payload format: {} */
-  MESSAGE_TERMINATE,
-};
+#include "multiprocess.h"
+#include "multiprocess_inferior.h"
+#include "multiprocess_superior.h"
 
 #define SOCKET_ENV_VAR "YR_INFERIOR_SOCKET"
 
@@ -66,7 +50,7 @@ static void init_socket_fd(void)
     socket_fd = result;
   }
 }
-static int inferior_socket(void)
+int yr_inferior_socket(void)
 {
   pthread_once(&init_socket_once, init_socket_fd);
   return socket_fd;
@@ -74,7 +58,7 @@ static int inferior_socket(void)
 
 bool yr_process_is_inferior(void)
 {
-  return inferior_socket() >= 0;
+  return yr_inferior_socket() >= 0;
 }
 
 static size_t environ_count(char **environ)
@@ -85,10 +69,9 @@ static size_t environ_count(char **environ)
 }
 
 // Spawn inferior process, return socket to it and pid by reference.
-// return 0 on success
-struct spawn_result { pid_t pid; int socket; };
-static int spawn_inferior(char *path, char **argv, char **environ,
-                          struct spawn_result *out_result)
+// return true on success
+static bool spawn_inferior(char *path, char **argv, char **environ,
+                          struct inferior_handle *out_result)
 {
   int result = -1;
 
@@ -183,15 +166,10 @@ static int spawn_inferior(char *path, char **argv, char **environ,
   if ( sockets[1] != -1 ) {
     close(sockets[1]);
   }
-  return result;
+  return result == 0;
 }
 
-enum recv_length_flags {
-  RECV_LENGTH_DRAIN = 1 << 0
-};
-
-
-static bool recv_length(int sock, void *buf, size_t len, struct timeval *timeout, int flags)
+bool yr_recv_length(int sock, void *buf, size_t len, struct timeval *timeout, int flags)
 {
   static const size_t drainbuf_len = 0x1000;
   bool drain = (flags & RECV_LENGTH_DRAIN) != 0;
@@ -236,7 +214,7 @@ static bool recv_length(int sock, void *buf, size_t len, struct timeval *timeout
   return true;
 }
 
-static bool send_length(int sock, const void *buf, size_t len, struct timeval *timeout)
+bool yr_send_length(int sock, const void *buf, size_t len, struct timeval *timeout)
 {
   size_t sent = 0;
   while ( sent < len ) {
@@ -269,10 +247,10 @@ static bool send_length(int sock, const void *buf, size_t len, struct timeval *t
   return true;
 }
 
-static bool recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeout)
+bool yr_recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeout)
 {
   char buf[4];
-  bool ok = recv_length(sock, buf, sizeof(buf), timeout, 0);
+  bool ok = yr_recv_length(sock, buf, sizeof(buf), timeout, 0);
   if ( !ok ) {
     return false;
   }
@@ -282,79 +260,12 @@ static bool recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeou
   return true;
 }
 
-static bool send_uint32(int sock, uint32_t in, struct timeval *timeout)
+bool yr_send_uint32(int sock, uint32_t in, struct timeval *timeout)
 {
   uint32_t tmp = htonl(in);
-  return send_length(sock, &tmp, sizeof(tmp), timeout);
+  return yr_send_length(sock, &tmp, sizeof(tmp), timeout);
 }
 
-static bool inferior_handle_command(int sock, uint32_t command,
-                                    yr_test_suite_collection_t collection,
-                                    struct yr_runtime_callbacks runtime_callbacks)
-{
-  switch ( command ) {
-  case MESSAGE_TERMINATE:
-    warnx("inferior terminating cleanly per superior instruction");
-    exit(0);
-  default:
-    warnx("unknown command %ld", (long)command);
-    return false;
-  }
-}
-
-static void inferior_loop(yr_test_suite_collection_t collection,
-                          struct yr_runtime_callbacks runtime_callbacks)
-{
-  int sock = inferior_socket();
-  while ( 1 ) {
-    uint32_t command;
-    bool ok = recv_uint32(sock, &command, NULL);
-    if ( !ok ) {
-      errx(EX_SOFTWARE, "inferior exiting due to error");
-    }
-    ok = inferior_handle_command(sock, command, collection, runtime_callbacks);
-    if ( !ok ) {
-      errx(EX_SOFTWARE, "failed to handle command");
-    }
-  }
-}
-
-static void drain_inferior_best_effort(struct spawn_result inferior_info)
-{
-  struct timeval timeout;
-  timeout.tv_sec = 1;
-  timeout.tv_usec = 0;
-  char buf[4096];
-  bool drained = recv_length(inferior_info.socket, buf, sizeof(buf), &timeout, RECV_LENGTH_DRAIN);
-  // if we drained the inferior is on the exit path so we can wait
-  int wait_flags = drained ? 0 : WNOHANG;
-  int stat_loc;
-  int result = waitpid(inferior_info.pid, &stat_loc, wait_flags);
-  if ( result == 0 ) {
-    warnx("inferior not dead yet, forcibly killing");
-    kill(inferior_info.pid, SIGKILL);
-    result = waitpid(inferior_info.pid, &stat_loc, 0);
-  }
-  if ( result < 0 ) {
-    warn("waitpid failed");
-  }
-}
-
-static bool spawn_inferior_checking_collection(char *path, char **argv, char **environ,
-                                               yr_test_suite_collection_t collection,
-                                               struct spawn_result *out_result)
-{
-  struct spawn_result tmp_spawn_result;
-  bool ok = !spawn_inferior(path, argv, environ, &tmp_spawn_result);
-
-  ok = ok && send_uint32(tmp_spawn_result.socket, MESSAGE_TERMINATE, NULL);
-
-  if ( ok && out_result ) {
-    *out_result = tmp_spawn_result;
-  }
-
-  return ok;
-}
 
 void
 yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char **environ,
@@ -363,19 +274,16 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
                                                  struct yr_runtime_callbacks runtime_callbacks)
 {
   if ( yr_process_is_inferior() ) {
-    inferior_loop(collection, runtime_callbacks);
+    yr_inferior_loop(collection, runtime_callbacks);
     abort(); // unreachable
   }
-  struct spawn_result spawn_result;
-  bool ok = spawn_inferior_checking_collection(path, argv, environ, collection, &spawn_result);
+  struct inferior_handle inferior_handle;
+  bool ok = spawn_inferior(path, argv, environ, &inferior_handle);
 
-  if ( !ok ) {
-    warnx("failed to spawn and check collection");
-  }
-
-  // if we're still OK at this point, be a good boy and attempt to reap our child
   if ( ok ) {
-    drain_inferior_best_effort(spawn_result);
+    yr_handle_run_multiprocess(inferior_handle, collection, store, runtime_callbacks);
+  } else {
+    warnx("failed to spawn and check collection");
   }
 }
 
