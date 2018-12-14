@@ -266,6 +266,36 @@ bool yr_send_uint32(int sock, uint32_t in, struct timeval *timeout)
   return yr_send_length(sock, &tmp, sizeof(tmp), timeout);
 }
 
+bool yr_send_message(int sock, struct yr_message *in, struct timeval *timeout)
+{
+  bool ok = yr_send_uint32(sock, in->message_code, timeout);
+  ok = ok && yr_send_uint32(sock, in->payload_length, timeout);
+  if ( in->payload_length ) {
+    ok = ok && yr_send_length(sock, in->payload, in->payload_length, timeout);
+  }
+  return ok;
+}
+
+bool yr_recv_message(int sock, struct yr_message **out_message, struct timeval *timeout)
+{
+  uint32_t message_code = 0;
+  bool ok = yr_recv_uint32(sock, &message_code, timeout);
+  uint32_t payload_length = 0;
+  ok = ok && yr_recv_uint32(sock, &payload_length, timeout);
+  struct yr_message *message = NULL;
+  if ( ok ) {
+    message = malloc(sizeof(struct yr_message) + payload_length);
+    message->message_code = message_code;
+    message->payload_length = payload_length;
+    ok = ok && yr_recv_length(sock, message->payload, payload_length, timeout, 0);
+    if ( ok ) {
+      *out_message = message;
+    } else {
+      free(message);
+    }
+  }
+  return ok;
+}
 
 void
 yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char **environ,

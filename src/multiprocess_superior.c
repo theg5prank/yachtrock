@@ -32,7 +32,13 @@ static void drain_inferior_best_effort(struct inferior_handle inferior_info)
 static bool check_collection(struct inferior_handle inferior,
                              yr_test_suite_collection_t collection)
 {
-  return yr_send_uint32(inferior.socket, MESSAGE_TERMINATE, NULL);
+  struct yr_message request_collection_message = {
+    .message_code = MESSAGE_TERMINATE,
+    .payload_length = 0
+  };
+  bool ok = yr_send_message(inferior.socket, &request_collection_message, NULL);
+
+  return ok;
 }
 
 void yr_handle_run_multiprocess(struct inferior_handle inferior,
