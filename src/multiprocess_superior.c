@@ -80,28 +80,49 @@ static bool check_collection(struct inferior_handle inferior,
   return true;
 }
 
+static bool spawn_and_check_collection(char *path, char **argv, char **environ,
+                                       yr_test_suite_collection_t collection,
+                                       struct inferior_handle *inferior)
+{
+  struct inferior_handle local_inferior;
+  bool ok = yr_spawn_inferior(path, argv, environ, &local_inferior);
+  if ( ok ) {
+    ok = check_collection(local_inferior, collection);
+    if ( !ok ) {
+      warnx("failed to check collection with inferior");
+      forcibly_terminate_inferior(local_inferior);
+      close(local_inferior.socket);
+    }
+  } else {
+    warnx("failed to spawn inferior");
+  }
+
+  if ( ok ) {
+    *inferior = local_inferior;
+  }
+
+  return ok;
+}
+
 void yr_handle_run_multiprocess(char *path, char **argv, char **environ,
                                 yr_test_suite_collection_t collection,
                                 yr_result_store_t store,
                                 struct yr_runtime_callbacks runtime_callbacks)
 {
   struct inferior_handle inferior;
-  bool ok = yr_spawn_inferior(path, argv, environ, &inferior);
-  ok = ok && check_collection(inferior, collection);
+  bool ok = spawn_and_check_collection(path, argv, environ, collection, &inferior);
 
-  if ( !ok ) {
-    warnx("failed to spawn and check collection");
-  }
-
-  ok = ok && send_term_message(inferior);
-
-  // if we're still OK at this point, be a good boy and attempt to reap our child
   if ( ok ) {
-    drain_inferior_best_effort(inferior);
-  } else {
-    forcibly_terminate_inferior(inferior);
+    ok = ok && send_term_message(inferior);
+
+    // if we're still OK at this point, be a good boy and attempt to reap our child
+    if ( ok ) {
+      drain_inferior_best_effort(inferior);
+    } else {
+      forcibly_terminate_inferior(inferior);
+    }
+    close(inferior.socket);
   }
-  close(inferior.socket);
 }
 
 #endif // YACHTROCK_POSIXY
