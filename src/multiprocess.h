@@ -20,7 +20,7 @@ enum yr_inferior_message {
   /* Payload format: {} */
   MESSAGE_REQUEST_COLLECTION_DESC,
   /* Payload format: num_suites[4] (suite * num_suites)
-   * suite: suite_name_len[4], suite_name[suite_len], num_cases[4], (testcase * num_cases)
+   * suite: suite_name_len[4], suite_name[suite_name_len], num_cases[4], (testcase * num_cases)
    * testcase: testcase_name_len[4], testcase_name[testcase_name_len]
    */
   MESSAGE_PROVIDE_COLLECTION_DESC,
@@ -40,6 +40,9 @@ struct yr_message {
 
 extern int yr_inferior_socket(void);
 
+extern bool yr_spawn_inferior(char *path, char **argv, char **environ,
+                              struct inferior_handle *out_result);
+
 enum recv_length_flags {
   RECV_LENGTH_DRAIN = 1 << 0
 };
@@ -49,6 +52,8 @@ extern bool yr_send_length(int sock, const void *buf, size_t len, struct timeval
 extern bool yr_send_uint32(int sock, uint32_t in, struct timeval *timeout);
 extern bool yr_send_message(int sock, struct yr_message *in, struct timeval *timeout);
 extern bool yr_recv_message(int sock, struct yr_message **out, struct timeval *timeout);
+
+extern size_t yr_multiprocess_collection_desc(char *buf, size_t buflen, yr_test_suite_collection_t collection);
 
 #endif // YACHTROCK_POSIXY
 

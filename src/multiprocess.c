@@ -70,7 +70,7 @@ static size_t environ_count(char **environ)
 
 // Spawn inferior process, return socket to it and pid by reference.
 // return true on success
-static bool spawn_inferior(char *path, char **argv, char **environ,
+bool yr_spawn_inferior(char *path, char **argv, char **environ,
                           struct inferior_handle *out_result)
 {
   int result = -1;
@@ -247,6 +247,26 @@ bool yr_send_length(int sock, const void *buf, size_t len, struct timeval *timeo
   return true;
 }
 
+static uint32_t netbuf_to_uint32(const char netbuf[static 4])
+{
+  uint32_t result = 0;
+  const unsigned char *ubuf = (unsigned char *)netbuf;
+  result |= (ubuf[0] << 3);
+  result |= (ubuf[1] << 2);
+  result |= (ubuf[2] << 1);
+  result |= (ubuf[3] << 0);
+  return result;
+}
+
+static void uint32_to_netbuf(uint32_t in, char netbuf[static 4])
+{
+  unsigned char *ubuf = (unsigned char *)netbuf;
+  ubuf[0] = (in >> 3) & 0xff;
+  ubuf[1] = (in >> 2) & 0xff;
+  ubuf[2] = (in >> 1) & 0xff;
+  ubuf[3] = (in >> 0) & 0xff;
+}
+
 bool yr_recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeout)
 {
   char buf[4];
@@ -254,16 +274,15 @@ bool yr_recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeout)
   if ( !ok ) {
     return false;
   }
-  uint32_t tmp;
-  memcpy(&tmp, buf, sizeof(buf));
-  *out = ntohl(tmp);
+  *out = netbuf_to_uint32(buf);
   return true;
 }
 
 bool yr_send_uint32(int sock, uint32_t in, struct timeval *timeout)
 {
-  uint32_t tmp = htonl(in);
-  return yr_send_length(sock, &tmp, sizeof(tmp), timeout);
+  char buf[4];
+  uint32_to_netbuf(in, buf);
+  return yr_send_length(sock, buf, sizeof(buf), timeout);
 }
 
 bool yr_send_message(int sock, struct yr_message *in, struct timeval *timeout)
@@ -297,24 +316,105 @@ bool yr_recv_message(int sock, struct yr_message **out_message, struct timeval *
   return ok;
 }
 
+static bool size_is_32bit(size_t size)
+{
+  return ((unsigned long long)size & 0xFFFFFFFF00000000ULL) == 0ULL;
+}
+
+static bool testcase_sizes_are_32bit(yr_test_case_t suite)
+{
+  return size_is_32bit(strlen(suite->name));
+}
+
+static bool testsuite_sizes_are_32bit(yr_test_suite_t suite)
+{
+  if ( !size_is_32bit(suite->num_cases) || !size_is_32bit(strlen(suite->name)) ) {
+    return false;
+  }
+  for ( size_t i = 0; i < suite->num_cases; i++ ) {
+    if ( !testcase_sizes_are_32bit(&(suite->cases[i])) ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool collection_sizes_are_32bit(yr_test_suite_collection_t collection)
+{
+  if ( !size_is_32bit(collection->num_suites) ) {
+    return false;
+  }
+  for ( size_t i = 0; i < collection->num_suites; i++ ) {
+    if ( !testsuite_sizes_are_32bit(collection->suites[i]) ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void
 yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char **environ,
                                                  yr_test_suite_collection_t collection,
                                                  yr_result_store_t store,
                                                  struct yr_runtime_callbacks runtime_callbacks)
 {
+  if ( !collection_sizes_are_32bit(collection) ) {
+    warnx("%s: Collection sizes are not expressible in 32 bits. "
+          "That's too big! Not running suites.", __FUNCTION__);
+    return;
+  }
   if ( yr_process_is_inferior() ) {
     yr_inferior_loop(collection, runtime_callbacks);
     abort(); // unreachable
   }
   struct inferior_handle inferior_handle;
-  bool ok = spawn_inferior(path, argv, environ, &inferior_handle);
+  bool ok = yr_spawn_inferior(path, argv, environ, &inferior_handle);
 
   if ( ok ) {
     yr_handle_run_multiprocess(inferior_handle, collection, store, runtime_callbacks);
   } else {
     warnx("failed to spawn and check collection");
   }
+}
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+static void write_data_to_buf(const char *data, size_t datalen, char *buf, size_t buflen, size_t *total)
+{
+  size_t available = *total < buflen ? buflen - *total : 0;
+  size_t to_write = MIN(datalen, available);
+  if ( to_write > 0 ) {
+    memcpy(buf + *total, data, to_write);
+  }
+  *total += datalen;
+}
+
+static void write_uint32_to_buf(uint32_t num, char *buf, size_t buflen, size_t *total)
+{
+  char numbuf[4];
+  uint32_to_netbuf(num, numbuf);
+  write_data_to_buf(numbuf, sizeof(numbuf), buf, buflen, total);
+}
+
+size_t yr_multiprocess_collection_desc(char *buf, size_t buflen, yr_test_suite_collection_t collection)
+{
+  size_t total = 0;
+  uint32_t num_suites = collection->num_suites;
+  write_uint32_to_buf(num_suites, buf, buflen, &total);
+  for ( size_t suite_i = 0; suite_i < collection->num_suites; suite_i++ ) {
+    yr_test_suite_t suite = collection->suites[suite_i];
+    write_uint32_to_buf((uint32_t)strlen(suite->name), buf, buflen, &total);
+    write_data_to_buf(suite->name, strlen(suite->name), buf, buflen, &total);
+    write_uint32_to_buf((uint32_t)suite->num_cases, buf, buflen, &total);
+    for ( size_t case_i = 0; case_i < suite->num_cases; case_i++ ) {
+      yr_test_case_t testcase = &suite->cases[case_i];
+      write_uint32_to_buf((uint32_t)strlen(testcase->name), buf, buflen, &total);
+      write_data_to_buf(testcase->name, strlen(testcase->name), buf, buflen, &total);
+    }
+  }
+  return total;
 }
 
 #endif // YACHTROCK_POSIXY
