@@ -367,14 +367,8 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
     yr_inferior_loop(collection, runtime_callbacks);
     abort(); // unreachable
   }
-  struct inferior_handle inferior_handle;
-  bool ok = yr_spawn_inferior(path, argv, environ, &inferior_handle);
 
-  if ( ok ) {
-    yr_handle_run_multiprocess(inferior_handle, collection, store, runtime_callbacks);
-  } else {
-    warnx("failed to spawn and check collection");
-  }
+  yr_handle_run_multiprocess(path, argv, environ, collection, store, runtime_callbacks);
 }
 
 #ifndef MIN

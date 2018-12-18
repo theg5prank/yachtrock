@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <err.h>
 #include <signal.h>
+#include <assert.h>
 
 #include "multiprocess_superior.h"
 
@@ -56,24 +57,45 @@ static bool check_collection(struct inferior_handle inferior,
     .payload_length = 0
   };
   bool ok = yr_send_message(inferior.socket, &request_collection_message, NULL);
+
+  size_t collection_len = yr_multiprocess_collection_desc(NULL, 0, collection);
+  char *collection_desc = malloc(collection_len);
+  size_t filled_out_size = yr_multiprocess_collection_desc(collection_desc, collection_len,
+                                                           collection);
+  assert(filled_out_size == collection_len);
+
   struct yr_message *desc_message;
   ok = ok && yr_recv_message(inferior.socket, &desc_message, NULL);
-  if ( ok ) {
-    fprintf(stderr, "received message of length %llu\n", (unsigned long long)(desc_message->payload_length));
+  if ( !ok ) {
+    assert(!desc_message);
+    return false;
+  }
+  assert(desc_message);
+  if ( desc_message->message_code != MESSAGE_PROVIDE_COLLECTION_DESC ||
+       desc_message->payload_length != collection_len ||
+       memcmp(desc_message->payload, collection_desc, collection_len) != 0 ) {
+    return false;
   }
 
-  return ok;
+  return true;
 }
 
-void yr_handle_run_multiprocess(struct inferior_handle inferior,
+void yr_handle_run_multiprocess(char *path, char **argv, char **environ,
                                 yr_test_suite_collection_t collection,
                                 yr_result_store_t store,
                                 struct yr_runtime_callbacks runtime_callbacks)
 {
-  bool ok = check_collection(inferior, collection);
-  // if we're still OK at this point, be a good boy and attempt to reap our child
+  struct inferior_handle inferior;
+  bool ok = yr_spawn_inferior(path, argv, environ, &inferior);
+  ok = ok && check_collection(inferior, collection);
+
+  if ( !ok ) {
+    warnx("failed to spawn and check collection");
+  }
+
   ok = ok && send_term_message(inferior);
 
+  // if we're still OK at this point, be a good boy and attempt to reap our child
   if ( ok ) {
     drain_inferior_best_effort(inferior);
   } else {
