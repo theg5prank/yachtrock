@@ -70,28 +70,41 @@ static bool check_collection(struct inferior_handle inferior,
     .message_code = MESSAGE_REQUEST_COLLECTION_DESC,
     .payload_length = 0
   };
+
+  size_t collection_len = 0;
+  size_t filled_out_size = 0;
+  char *collection_desc = NULL;
+  struct yr_message *desc_message = NULL;
+  
   bool ok = yr_send_message(inferior.socket, &request_collection_message, NULL);
 
-  size_t collection_len = yr_multiprocess_collection_desc(NULL, 0, collection);
-  char *collection_desc = malloc(collection_len);
-  size_t filled_out_size = yr_multiprocess_collection_desc(collection_desc, collection_len,
+  if ( !ok ) {
+    goto out;
+  }
+
+  collection_len = yr_multiprocess_collection_desc(NULL, 0, collection);
+  collection_desc = malloc(collection_len);
+  filled_out_size = yr_multiprocess_collection_desc(collection_desc, collection_len,
                                                            collection);
   assert(filled_out_size == collection_len);
 
-  struct yr_message *desc_message;
   ok = ok && yr_recv_message(inferior.socket, &desc_message, NULL);
   if ( !ok ) {
     assert(!desc_message);
-    return false;
+    goto out;
   }
   assert(desc_message);
   if ( desc_message->message_code != MESSAGE_PROVIDE_COLLECTION_DESC ||
        desc_message->payload_length != collection_len ||
        memcmp(desc_message->payload, collection_desc, collection_len) != 0 ) {
-    return false;
+    ok = false;
+    goto out;
   }
 
-  return true;
+ out:
+  free(collection_desc);
+  free(desc_message);
+  return ok;
 }
 
 static bool spawn_and_check_collection(char *path, char **argv, char **environ,

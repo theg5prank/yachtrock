@@ -17,6 +17,8 @@ YACHTROCK_DEFINE_TEST_SUITE_COLLECTION_DISCOVERER()
                                                           case21, case22);
   yr_test_suite_t suites[] = {suite1, suite2};
   yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(2, suites);
+  free(suite1);
+  free(suite2);
 
   return collection;
 }
