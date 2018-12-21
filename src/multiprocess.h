@@ -61,14 +61,18 @@ extern bool yr_recv_message(int sock, struct yr_message **out, struct timeval *t
 extern struct yr_message *yr_message_create_with_payload(enum yr_inferior_message message,
                                                          void *payload, size_t payload_length);
 
-extern size_t yr_multiprocess_collection_desc(char *buf, size_t buflen, yr_test_suite_collection_t collection);
+extern size_t yr_multiprocess_collection_desc(char *buf, size_t buflen,
+                                              yr_test_suite_collection_t collection);
 extern size_t yr_invoke_case_payload(char *buf, size_t buflen, size_t suiteid, size_t caseid);
 extern bool yr_extract_ids_from_invoke_case_message(struct yr_message *message, size_t *suiteid,
                                                     size_t *caseid);
 extern size_t yr_case_finished_payload(char *buf, size_t buflen, size_t suiteid, size_t caseid);
 bool yr_extract_ids_from_case_finished_message(struct yr_message *message, size_t *suiteid,
                                                size_t *caseid);
-
+extern size_t yr_case_result_payload(char *buf, size_t buflen, size_t suiteid, size_t caseid,
+                                     yr_result_t result);
+extern bool yr_extract_info_from_case_result_message(struct yr_message *message, size_t *suiteid,
+                                                     size_t *caseid, yr_result_t *result);
 
 #endif // YACHTROCK_POSIXY
 

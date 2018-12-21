@@ -1,6 +1,6 @@
 TESTS += test_libyachtrock
 
-LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c dummy_module.c run_under_store_tests.c
+LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c dummy_module.c run_under_store_tests.c multiprocess_basic_tests.c
 LIBYACHTROCK_TESTSRC := $(patsubst %,$(LIBYACHTROCK_DIR)test/%,$(LIBYACHTROCK_TESTSRC))
 CSRC += $(LIBYACHTROCK_TESTSRC)
 LIBYACHTROCK_TESTOBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_TESTSRC)))
@@ -16,7 +16,7 @@ clean_libyachtrock_tests:
 
 clean_libyachtrock: clean_libyachtrock_tests
 
-test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase test_libyachtrock_run_under_store
+test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase test_libyachtrock_run_under_store test_libyachtrock_multiprocess_basic
 
 test_libyachtrock_%: libyachtrock_%_tests_success
 	true

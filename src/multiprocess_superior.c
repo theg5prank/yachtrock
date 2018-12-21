@@ -10,6 +10,19 @@
 
 #include "multiprocess_superior.h"
 
+static bool result_valid(yr_result_t result)
+{
+  switch ( result ) {
+  case YR_RESULT_UNSET:
+    // TODO: should this be false? Inferior should not send this.
+  case YR_RESULT_PASSED:
+  case YR_RESULT_FAILED:
+  case YR_RESULT_SKIPPED:
+    return true;
+  }
+  return false;
+}
+
 static int eintr_waitpid(pid_t pid, int *stat_loc, int flags)
 {
   int result;
@@ -165,9 +178,21 @@ static bool invoke_case(struct inferior_handle inferior, size_t suite_index, siz
       ok = yr_recv_message(inferior.socket, &message, NULL);
       if ( ok ) {
         switch ( message->message_code ) {
-        case MESSAGE_CASE_RESULT:
-          fprintf(stderr, "got case result\n");
+        case MESSAGE_CASE_RESULT: {
+          size_t result_suiteid = 0, result_caseid = 0;
+          yr_result_t result = YR_RESULT_UNSET;
+          ok = yr_extract_info_from_case_result_message(message, &result_suiteid, &result_caseid, &result);
+          if ( !ok ) {
+            warnx("couldn't parse case result message");
+          } else if ( result_suiteid != suite_index || result_caseid != case_index ||
+                      !result_valid(result) ) {
+            warnx("bogus case result message: %zu %zu %d", result_suiteid, result_caseid, (int)result);
+            ok = false;
+          } else {
+            yr_result_store_record_result(case_store, result);
+          }
           break;
+        }
         case MESSAGE_CASE_FINISHED: {
           size_t finished_suiteid = 0, finished_caseid = 0;
           ok = yr_extract_ids_from_case_finished_message(message, &finished_suiteid, &finished_caseid);

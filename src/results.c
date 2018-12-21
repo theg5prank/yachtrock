@@ -38,6 +38,11 @@ static inline yr_result_t merge_result(yr_result_t old, yr_result_t new)
   YR_RUNTIME_ASSERT(false, "unhandled result case in %s", __FUNCTION__);
 }
 
+yr_result_t yr_merge_result(yr_result_t old, yr_result_t new)
+{
+  return merge_result(old, new);
+}
+
 static inline void store_mut_check(yr_result_store_t store)
 {
   YR_RUNTIME_ASSERT(store->open, "mutation of closed result store requested");

@@ -477,4 +477,28 @@ bool yr_extract_ids_from_case_finished_message(struct yr_message *message, size_
   return true;
 }
 
+size_t yr_case_result_payload(char *buf, size_t buflen, size_t suiteid, size_t caseid,
+                              yr_result_t result)
+{
+  char result_byte = (char)result;
+  size_t total = 0;
+  write_uint32_to_buf(suiteid, buf, buflen, &total);
+  write_uint32_to_buf(caseid, buf, buflen, &total);
+  write_data_to_buf(&result_byte, 1, buf, buflen, &total);
+  return total;
+}
+
+extern bool yr_extract_info_from_case_result_message(struct yr_message *message, size_t *suiteid,
+                                                     size_t *caseid, yr_result_t *result)
+{
+  if ( message->payload_length != 9 || message->message_code != MESSAGE_CASE_RESULT ) {
+    return false;
+  }
+
+  *suiteid = netbuf_to_uint32(message->payload);
+  *caseid = netbuf_to_uint32(message->payload + 4);
+  *result = *(message->payload + 8);
+  return true;
+}
+
 #endif // YACHTROCK_POSIXY
