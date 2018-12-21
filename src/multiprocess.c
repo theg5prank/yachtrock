@@ -364,25 +364,6 @@ static bool collection_sizes_are_32bit(yr_test_suite_collection_t collection)
   return true;
 }
 
-void
-yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char **environ,
-                                                 yr_test_suite_collection_t collection,
-                                                 yr_result_store_t store,
-                                                 struct yr_runtime_callbacks runtime_callbacks)
-{
-  if ( !collection_sizes_are_32bit(collection) ) {
-    warnx("%s: Collection sizes are not expressible in 32 bits. "
-          "That's too big! Not running suites.", __FUNCTION__);
-    return;
-  }
-  if ( yr_process_is_inferior() ) {
-    yr_inferior_loop(collection, runtime_callbacks);
-    abort(); // unreachable
-  }
-
-  yr_handle_run_multiprocess(path, argv, environ, collection, store, runtime_callbacks);
-}
-
 struct yr_message *yr_message_create_with_payload(enum yr_inferior_message message,
                                                   void *payload, size_t payload_length)
 {
@@ -499,6 +480,38 @@ extern bool yr_extract_info_from_case_result_message(struct yr_message *message,
   *caseid = netbuf_to_uint32(message->payload + 4);
   *result = *(message->payload + 8);
   return true;
+}
+
+void
+yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char **environ,
+                                                 yr_test_suite_collection_t collection,
+                                                 yr_result_store_t store,
+                                                 struct yr_runtime_callbacks runtime_callbacks)
+{
+  if ( yr_process_is_inferior() ) {
+    yr_inferior_checkin(collection, runtime_callbacks);
+    abort();
+  }
+
+  if ( !collection_sizes_are_32bit(collection) ) {
+    warnx("%s: Collection sizes are not expressible in 32 bits. "
+          "That's too big! Not running suites.", __FUNCTION__);
+    return;
+  }
+
+  yr_handle_run_multiprocess(path, argv, environ, collection, store, runtime_callbacks);
+}
+
+void
+yr_inferior_checkin(yr_test_suite_collection_t collection,
+                    struct yr_runtime_callbacks runtime_callbacks)
+{
+  YR_RUNTIME_ASSERT(yr_process_is_inferior(), "only inferior process may call %s", __FUNCTION__);
+  if ( !collection_sizes_are_32bit(collection) ) {
+    errx(EX_DATAERR, "%s: inferior: Collection sizes are not expressible in 32 bits. "
+         "That's too big! aborting.", __FUNCTION__);
+  }
+  yr_inferior_loop(collection, runtime_callbacks);
 }
 
 #endif // YACHTROCK_POSIXY

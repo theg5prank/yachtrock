@@ -2,6 +2,7 @@
 #define YACHTROCK_YACHTROCK_H
 
 #include <stdbool.h>
+#include <stdnoreturn.h>
 
 #include <yachtrock/base.h>
 #include <yachtrock/assert.h>
@@ -53,8 +54,9 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
                                                  yr_result_store_t store,
                                                  struct yr_runtime_callbacks runtime_callbacks);
 
-YACHTROCK_EXTERN bool
-yr_process_is_inferior(void);
+YACHTROCK_EXTERN bool yr_process_is_inferior(void);
+YACHTROCK_EXTERN noreturn void yr_inferior_checkin(yr_test_suite_collection_t collection,
+                                                   struct yr_runtime_callbacks runtime_callbacks);
 
 #endif
 

@@ -155,9 +155,7 @@ int main(int argc, char **argv)
   if ( yr_process_is_inferior() ) {
     struct setup_teardown_test_data *data;
     yr_test_suite_collection_t collection = create_setups_teardowns_suite_collection(&data);
-    yr_result_store_t store = yr_result_store_create("dummy");
-    yr_run_suite_collection_under_store_multiprocess(argv[0], argv, environ, collection, store,
-                                                     YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+    yr_inferior_checkin(collection, YR_BASIC_STDERR_RUNTIME_CALLBACKS);
     exit(EXIT_FAILURE); // shouldn't get here
   }
   struct proc_info info;
