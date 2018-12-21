@@ -61,6 +61,8 @@ int main(int argc, char **argv)
                                                    final_collection, store,
                                                    YR_BASIC_STDERR_RUNTIME_CALLBACKS);
 
+  yr_result_store_close(store);
+
   if ( !yr_process_is_inferior() ) {
     char *desc = yr_result_store_copy_description(store);
     fprintf(stdout, "%s\n", desc);

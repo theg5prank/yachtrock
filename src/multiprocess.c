@@ -26,6 +26,18 @@
 #include "multiprocess_inferior.h"
 #include "multiprocess_superior.h"
 
+const struct inferior_handle YR_INFERIOR_HANDLE_NULL = {
+  .pid = -1,
+  .socket = -1
+};
+
+bool yr_inferior_handle_is_null(struct inferior_handle handle)
+{
+  assert((handle.pid == -1 && handle.socket == -1) ||
+         (handle.pid != -1 && handle.socket != -1));
+  return handle.pid == -1;
+}
+
 #define SOCKET_ENV_VAR "YR_INFERIOR_SOCKET"
 
 static int socket_fd = -1;
@@ -371,6 +383,20 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
   yr_handle_run_multiprocess(path, argv, environ, collection, store, runtime_callbacks);
 }
 
+struct yr_message *yr_message_create_with_payload(enum yr_inferior_message message,
+                                                  void *payload, size_t payload_length)
+{
+  size_t objlen = sizeof(struct yr_message) + payload_length;
+  struct yr_message *result = malloc(objlen);
+  result->message_code = message;
+  result->payload_length = payload_length;
+  if ( payload_length ) {
+    memcpy(result->payload, payload, payload_length);
+  }
+  return result;
+}
+
+
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
@@ -409,6 +435,46 @@ size_t yr_multiprocess_collection_desc(char *buf, size_t buflen, yr_test_suite_c
     }
   }
   return total;
+}
+
+size_t yr_invoke_case_payload(char *buf, size_t buflen, size_t suiteid, size_t caseid)
+{
+  size_t total = 0;
+  write_uint32_to_buf(suiteid, buf, buflen, &total);
+  write_uint32_to_buf(caseid, buf, buflen, &total);
+  return total;
+}
+
+bool yr_extract_ids_from_invoke_case_message(struct yr_message *message, size_t *suiteid,
+                                             size_t *caseid)
+{
+  if ( message->payload_length != 8 || message->message_code != MESSAGE_INVOKE_CASE ) {
+    return false;
+  }
+
+  *suiteid = netbuf_to_uint32(message->payload);
+  *caseid = netbuf_to_uint32(message->payload + 4);
+  return true;
+}
+
+size_t yr_case_finished_payload(char *buf, size_t buflen, size_t suiteid, size_t caseid)
+{
+  size_t total = 0;
+  write_uint32_to_buf(suiteid, buf, buflen, &total);
+  write_uint32_to_buf(caseid, buf, buflen, &total);
+  return total;
+}
+
+bool yr_extract_ids_from_case_finished_message(struct yr_message *message, size_t *suiteid,
+                                               size_t *caseid)
+{
+  if ( message->payload_length != 8 || message->message_code != MESSAGE_CASE_FINISHED ) {
+    return false;
+  }
+
+  *suiteid = netbuf_to_uint32(message->payload);
+  *caseid = netbuf_to_uint32(message->payload + 4);
+  return true;
 }
 
 #endif // YACHTROCK_POSIXY
