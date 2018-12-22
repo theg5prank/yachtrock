@@ -9,6 +9,7 @@
 #include <errno.h>
 
 #include "multiprocess_superior.h"
+#include "yrutil.h"
 
 static bool result_valid(yr_result_t result)
 {
@@ -44,12 +45,12 @@ static void drain_inferior_best_effort(struct inferior_handle *inferior_info)
   int stat_loc = 0;
   int result = eintr_waitpid(inferior_info->pid, &stat_loc, wait_flags);
   if ( result == 0 ) {
-    warnx("inferior not dead yet, forcibly killing");
+    yr_warnx("inferior not dead yet, forcibly killing");
     kill(inferior_info->pid, SIGKILL);
     result = eintr_waitpid(inferior_info->pid, &stat_loc, 0);
   }
   if ( result < 0 ) {
-    warn("waitpid failed");
+    yr_warn("waitpid failed");
   }
   close(inferior_info->socket);
   *inferior_info = YR_INFERIOR_HANDLE_NULL;
@@ -61,7 +62,7 @@ static void forcibly_terminate_inferior(struct inferior_handle *inferior)
   int stat_loc = 0;
   int result = waitpid(inferior->pid, &stat_loc, 0);
   if ( result < 0 ) {
-    warn("waitpid failed");
+    yr_warn("waitpid failed");
   }
   close(inferior->socket);
   *inferior = YR_INFERIOR_HANDLE_NULL;
@@ -129,11 +130,11 @@ static bool spawn_and_check_collection(char *path, char **argv, char **environ,
   if ( ok ) {
     ok = check_collection(local_inferior, collection);
     if ( !ok ) {
-      warnx("failed to check collection with inferior");
+      yr_warnx("failed to check collection with inferior");
       forcibly_terminate_inferior(&local_inferior);
     }
   } else {
-    warnx("failed to spawn inferior");
+    yr_warnx("failed to spawn inferior");
   }
 
   if ( ok ) {
@@ -183,10 +184,10 @@ static bool invoke_case(struct inferior_handle inferior, size_t suite_index, siz
           yr_result_t result = YR_RESULT_UNSET;
           ok = yr_extract_info_from_case_result_message(message, &result_suiteid, &result_caseid, &result);
           if ( !ok ) {
-            warnx("couldn't parse case result message");
+            yr_warnx("couldn't parse case result message");
           } else if ( result_suiteid != suite_index || result_caseid != case_index ||
                       !result_valid(result) ) {
-            warnx("bogus case result message: %zu %zu %d", result_suiteid, result_caseid, (int)result);
+            yr_warnx("bogus case result message: %zu %zu %d", result_suiteid, result_caseid, (int)result);
             ok = false;
           } else {
             yr_result_store_record_result(case_store, result);
@@ -197,15 +198,15 @@ static bool invoke_case(struct inferior_handle inferior, size_t suite_index, siz
           size_t finished_suiteid = 0, finished_caseid = 0;
           ok = yr_extract_ids_from_case_finished_message(message, &finished_suiteid, &finished_caseid);
           if ( !ok ) {
-            warnx("couldn't parse case finished message");
+            yr_warnx("couldn't parse case finished message");
           } else if ( finished_suiteid != suite_index || finished_caseid != case_index ) {
-            warnx("bogus case finished message: %zu %zu", finished_suiteid, finished_caseid);
+            yr_warnx("bogus case finished message: %zu %zu", finished_suiteid, finished_caseid);
             ok = false;
           }
           break;
         }
         default:
-          warnx("unknown message from inferior %d", message->message_code);
+          yr_warnx("unknown message from inferior %d", message->message_code);
           ok = false;
           break;
         }
@@ -242,7 +243,7 @@ static bool run_collection(char *path, char **argv, char **environ,
       } else {
         bool spawned_ok = spawn_inferior_if_necessary(path, argv, environ, collection, &inferior);
         if ( !spawned_ok ) {
-          warnx("failure spawning inferior and checking test suite collection!");
+          yr_warnx("failure spawning inferior and checking test suite collection!");
           yr_result_store_record_result(case_store, YR_RESULT_SKIPPED);
           spawn_failure = true;
           inferior = YR_INFERIOR_HANDLE_NULL;

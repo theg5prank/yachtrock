@@ -104,7 +104,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
 
   int sockets[2] = { -1, -1 };
   if ( socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0 ) {
-    warn("socketpair failed");
+    yr_warn("socketpair failed");
     goto out;
   }
 
@@ -112,18 +112,18 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
 #if __APPLE__ || BSD
     int on = 1;
     if ( setsockopt(sockets[i], SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on)) ) {
-      warn("setsockopt failed for SO_NOSIGPIPE");
+      yr_warn("setsockopt failed for SO_NOSIGPIPE");
       goto out;
     }
 #endif
 
     int flags = fcntl(sockets[i], F_GETFL);
     if ( flags == -1 ) {
-      warn("fcntl(F_GETFL) failed");
+      yr_warn("fcntl(F_GETFL) failed");
       goto out;
     }
     if ( fcntl(sockets[i], F_SETFL, flags | O_NONBLOCK) == -1 ) {
-      warn("fcntl(F_SETFL) failed");
+      yr_warn("fcntl(F_SETFL) failed");
       goto out;
     }
   }
@@ -141,12 +141,12 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   posix_spawn_file_actions_t file_actions;
   int error = posix_spawn_file_actions_init(&file_actions);
   if ( error != 0 ) {
-    warnc(error, "posix_spawn_file_actions_init failed");
+    yr_warnc(error, "posix_spawn_file_actions_init failed");
     goto out;
   }
   error = posix_spawn_file_actions_addclose(&file_actions, sockets[0]);
   if ( error != 0 ) {
-    warnc(error, "posix_spawn_file_actions_addclose failed");
+    yr_warnc(error, "posix_spawn_file_actions_addclose failed");
     goto out;
   }
 
@@ -154,7 +154,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   result = posix_spawnp(&pid, path, &file_actions, NULL, argv, new_environ);
 
   if ( result != 0 ) {
-    warnc(result, "posix_spawn failed");
+    yr_warnc(result, "posix_spawn failed");
     goto out;
   }
 
@@ -199,22 +199,22 @@ bool yr_recv_length(int sock, void *buf, size_t len, struct timeval *timeout, in
     FD_SET(sock, &set);
     int sel_result = select(sock + 1, &set, NULL, NULL, timeout);
     if ( sel_result < 0 ) {
-      warn("select failed");
+      yr_warn("select failed");
       return false;
     } else if ( sel_result == 0 ) {
-      warnx("select timed out");
+      yr_warnx("select timed out");
       return false;
     }
     assert(FD_ISSET(sock, &set));
     ssize_t receive_iter = recv(sock, ((char *)buf) + received, len - received, 0);
     if ( receive_iter < 0 ) {
-      warn("recv failed");
+      yr_warn("recv failed");
       return false;
     } else if ( receive_iter == 0 ) {
       if ( drain ) {
         return true;
       } else {
-        warnx("recv returned zero bytes");
+        yr_warnx("recv returned zero bytes");
         return false;
       }
     }
@@ -235,10 +235,10 @@ bool yr_send_length(int sock, const void *buf, size_t len, struct timeval *timeo
     FD_SET(sock, &set);
     int sel_result = select(sock + 1, NULL, &set, NULL, timeout);
     if ( sel_result < 0 ) {
-      warn("select failed");
+      yr_warn("select failed");
       return false;
     } else if ( sel_result == 0 ) {
-      warnx("select timed out");
+      yr_warnx("select timed out");
       return false;
     }
     assert(FD_ISSET(sock, &set));
@@ -248,10 +248,10 @@ bool yr_send_length(int sock, const void *buf, size_t len, struct timeval *timeo
 #endif
     ssize_t send_iter = send(sock, ((const char *)buf) + sent, len - sent, flags);
     if ( send_iter < 0 ) {
-      warn("send failed");
+      yr_warn("send failed");
       return false;
     } else if ( send_iter == 0 ) {
-      warnx("send sent zero bytes?");
+      yr_warnx("send sent zero bytes?");
       return false;
     }
     sent += send_iter;
@@ -494,7 +494,7 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
   }
 
   if ( !collection_sizes_are_32bit(collection) ) {
-    warnx("%s: Collection sizes are not expressible in 32 bits. "
+    yr_warnx("%s: Collection sizes are not expressible in 32 bits. "
           "That's too big! Not running suites.", __FUNCTION__);
     return;
   }
@@ -508,8 +508,8 @@ yr_inferior_checkin(yr_test_suite_collection_t collection,
 {
   YR_RUNTIME_ASSERT(yr_process_is_inferior(), "only inferior process may call %s", __FUNCTION__);
   if ( !collection_sizes_are_32bit(collection) ) {
-    errx(EX_DATAERR, "%s: inferior: Collection sizes are not expressible in 32 bits. "
-         "That's too big! aborting.", __FUNCTION__);
+    yr_errx(EX_DATAERR, "%s: inferior: Collection sizes are not expressible in 32 bits. "
+            "That's too big! aborting.", __FUNCTION__);
   }
   yr_inferior_loop(collection, runtime_callbacks);
 }

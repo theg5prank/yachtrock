@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "multiprocess_inferior.h"
+#include "yrutil.h"
 
 struct inferior_state {
   yr_test_suite_t opened_suite;
@@ -90,7 +91,7 @@ static void note_potential_new_result(struct inferior_runtime_context *context,
     bool ok = send_result_update(context->sock, context->suite_index,
                                  context->case_index, real_new_result);
     if ( !ok ) {
-      errx(EX_SOFTWARE, "failure sending result update");
+      yr_errx(EX_SOFTWARE, "failure sending result update");
     }
     context->current_result = real_new_result;
   }
@@ -126,7 +127,7 @@ static bool handle_invoke_case(int sock, struct yr_message *invoke_case_message,
   if ( !yr_extract_ids_from_invoke_case_message(invoke_case_message, &suiteid, &caseid) ||
        (suiteid > collection->num_suites) ||
        (caseid > collection->suites[suiteid]->num_cases) ) {
-    errx(EX_SOFTWARE, "bogus message payload length from superior");
+    yr_errx(EX_SOFTWARE, "bogus message payload length from superior");
   }
 
   struct inferior_runtime_context runtime_context = {
@@ -174,13 +175,13 @@ static bool inferior_handle_message(int sock, struct yr_message *command_message
     break;
   case MESSAGE_TERMINATE:
     finalize_state(state);
-    warnx("inferior terminating cleanly per superior instruction");
+    yr_warnx("inferior terminating cleanly per superior instruction");
     exit(0);
   case MESSAGE_INVOKE_CASE:
     return handle_invoke_case(sock, command_message, collection, runtime_callbacks, state);
     break;
   default:
-    warnx("unknown command %ld", (long)command_message->message_code);
+    yr_warnx("unknown command %ld", (long)command_message->message_code);
     return false;
   }
 }
@@ -195,11 +196,11 @@ void yr_inferior_loop(yr_test_suite_collection_t collection,
     struct yr_message *command_message = NULL;
     bool ok = yr_recv_message(sock, &command_message, NULL);
     if ( !ok ) {
-      errx(EX_SOFTWARE, "inferior exiting due to error");
+      yr_errx(EX_SOFTWARE, "inferior exiting due to error");
     }
     ok = inferior_handle_message(sock, command_message, collection, runtime_callbacks, &state);
     if ( !ok ) {
-      errx(EX_SOFTWARE, "failed to handle command");
+      yr_errx(EX_SOFTWARE, "failed to handle command");
     }
     free(command_message);
   }
