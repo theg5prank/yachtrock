@@ -1,6 +1,6 @@
 #include <yachtrock/yachtrock.h>
 
-#if YACHTROCK_POSIXY
+#if YACHTROCK_MULTIPROCESS
 
 #include <err.h>
 #include <stdint.h>
@@ -206,4 +206,4 @@ void yr_inferior_loop(yr_test_suite_collection_t collection,
   }
 }
 
-#endif // YACHTROCK_POSIXY
+#endif // YACHTROCK_MULTIPROCESS

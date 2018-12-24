@@ -1,6 +1,6 @@
 #include <yachtrock/yachtrock.h>
 
-#if YACHTROCK_POSIXY
+#if YACHTROCK_MULTIPROCESS
 
 #include <sys/wait.h>
 #include <err.h>
@@ -277,4 +277,4 @@ void yr_handle_run_multiprocess(char *path, char **argv, char **environ,
   run_collection(path, argv, environ, collection, store);
 }
 
-#endif // YACHTROCK_POSIXY
+#endif // YACHTROCK_MULTIPROCESS

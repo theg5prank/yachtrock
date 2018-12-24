@@ -3,7 +3,7 @@
 
 #include <yachtrock/yachtrock.h>
 
-#if YACHTROCK_POSIXY
+#if YACHTROCK_MULTIPROCESS
 
 #include <time.h>
 #include <sys/time.h>
@@ -75,6 +75,6 @@ extern size_t yr_case_result_payload(char *buf, size_t buflen, size_t suiteid, s
 extern bool yr_extract_info_from_case_result_message(struct yr_message *message, size_t *suiteid,
                                                      size_t *caseid, yr_result_t *result);
 
-#endif // YACHTROCK_POSIXY
+#endif // YACHTROCK_MULTIPROCESS
 
 #endif

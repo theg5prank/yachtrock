@@ -5,7 +5,7 @@
 
 #include <yachtrock/yachtrock.h>
 
-#if YACHTROCK_POSIXY
+#if YACHTROCK_MULTIPROCESS
 
 #include <signal.h>
 #include <stdlib.h>
@@ -516,4 +516,4 @@ yr_inferior_checkin(yr_test_suite_collection_t collection,
   yr_inferior_loop(collection, runtime_callbacks);
 }
 
-#endif // YACHTROCK_POSIXY
+#endif // YACHTROCK_MULTIPROCESS

@@ -3,7 +3,7 @@
 
 #include <yachtrock/yachtrock.h>
 
-#if YACHTROCK_POSIXY
+#if YACHTROCK_MULTIPROCESS
 
 #include "multiprocess.h"
 
@@ -12,6 +12,6 @@ extern void yr_handle_run_multiprocess(char *path, char **argv, char **environ,
                                        yr_result_store_t store,
                                        struct yr_runtime_callbacks runtime_callbacks);
 
-#endif // YACHTROCK_POSIXY
+#endif // YACHTROCK_MULTIPROCESS
 
 #endif // YR_MULTIPROCESS_SUPERIOR_H

@@ -24,7 +24,7 @@ YACHTROCK_EXTERN void yr_run_suite_collection_under_store(yr_test_suite_collecti
                                                           yr_result_store_t store,
                                                           struct yr_runtime_callbacks runtime_callbacks);
 
-#if YACHTROCK_POSIXY
+#if YACHTROCK_MULTIPROCESS
 
 /**
  * Run test code in an inferior process.
@@ -54,7 +54,18 @@ yr_run_suite_collection_under_store_multiprocess(char *path, char **argv, char *
                                                  yr_result_store_t store,
                                                  struct yr_runtime_callbacks runtime_callbacks);
 
+/**
+ * Determine whether the process is the inferior process.
+ */
 YACHTROCK_EXTERN bool yr_process_is_inferior(void);
+
+/**
+ * Assuming the process is the inferior process, check in with the waiting superior process.
+ *
+ * This function may be easier to use in some cases than just calling into
+ * yr_run_suite_collection_under_store_multiprocess in the inferior as normal; however, it will
+ * abort if the process is not the inferior.
+ */
 YACHTROCK_EXTERN noreturn void yr_inferior_checkin(yr_test_suite_collection_t collection,
                                                    struct yr_runtime_callbacks runtime_callbacks);
 
