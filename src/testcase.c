@@ -248,7 +248,7 @@ yr_test_suite_collection_create_from_collection_array(size_t num_collections,
 static const char discoverer_sym[] = YR_XSTR(YACHTROCK_MODULE_DISCOVER_NAME);
 
 yr_test_suite_collection_t
-yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
+yr_test_suite_collection_create_from_dylib_path(const char *path, char **errmsg)
 {
   yr_test_suite_collection_t result = NULL;
   void *handle = dlopen(path, RTLD_LAZY);
@@ -259,7 +259,7 @@ yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
     goto out;
   }
 
-  result = yr_test_suite_collection_load_from_handle(handle, errmsg);
+  result = yr_test_suite_collection_create_from_handle(handle, errmsg);
 
  out:
   if ( !result && handle ) {
@@ -269,7 +269,7 @@ yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg)
 }
 
 yr_test_suite_collection_t
-yr_test_suite_collection_load_from_handle(void *handle, char **errmsg)
+yr_test_suite_collection_create_from_handle(void *handle, char **errmsg)
 {
   yr_test_suite_collection_t result = NULL;
   yr_module_discoverer_t discoverer = dlsym(handle, discoverer_sym);

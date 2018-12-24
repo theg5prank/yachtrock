@@ -119,10 +119,10 @@ typedef yr_test_suite_collection_t
 
 
 YACHTROCK_EXTERN yr_test_suite_collection_t
-yr_test_suite_collection_load_from_dylib_path(const char *path, char **errmsg);
+yr_test_suite_collection_create_from_dylib_path(const char *path, char **errmsg);
 
 YACHTROCK_EXTERN yr_test_suite_collection_t
-yr_test_suite_collection_load_from_handle(void *handle, char **errmsg);
+yr_test_suite_collection_create_from_handle(void *handle, char **errmsg);
 
 #endif
 

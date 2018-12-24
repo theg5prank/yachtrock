@@ -22,7 +22,7 @@ static yr_test_suite_collection_t create_collection_from_path(const char *path)
     return NULL;
   }
   char *errmsg = NULL;
-  yr_test_suite_collection_t collection = yr_test_suite_collection_load_from_handle(handle, &errmsg);
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_handle(handle, &errmsg);
   if ( collection == NULL ) {
     fprintf(stderr, "%s: Couldn't load collection from image at %s: %s\n", progn, path, errmsg);
   }

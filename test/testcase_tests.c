@@ -226,8 +226,8 @@ static YR_TESTCASE(test_collection_discovery)
   struct testcase_tests_suite_context *context = testcase->suite->refcon;
   char *err = NULL;
   yr_test_suite_collection_t collection =
-    yr_test_suite_collection_load_from_dylib_path(context->dummy_module_path,
-                                                  &err);
+    yr_test_suite_collection_create_from_dylib_path(context->dummy_module_path,
+                                                    &err);
   YR_ASSERT(collection != NULL, "didn't get collection, error is %s", err);
   YR_ASSERT_EQUAL(collection->num_suites, 2);
   YR_ASSERT_EQUAL(collection->suites[0]->num_cases, 2);
@@ -248,8 +248,8 @@ static YR_TESTCASE(test_collection_discovery_handle)
   void *handle = dlopen(context->dummy_module_path, RTLD_LAZY);
   YR_ASSERT(handle != NULL, "Couldn't load handle: %s", dlerror());
   yr_test_suite_collection_t collection =
-    yr_test_suite_collection_load_from_handle(handle,
-                                              &err);
+    yr_test_suite_collection_create_from_handle(handle,
+                                                &err);
   YR_ASSERT(collection != NULL, "Didn't get collection, error is %s", err);
   YR_ASSERT_EQUAL(collection->num_suites, 2);
   YR_ASSERT_EQUAL(collection->suites[0]->num_cases, 2);
@@ -268,8 +268,8 @@ static YR_TESTCASE(test_collection_discovery_fail_no_dylib)
 {
   char *err = NULL;
   yr_test_suite_collection_t collection =
-    yr_test_suite_collection_load_from_dylib_path("nope.dylib",
-                                                  &err);
+    yr_test_suite_collection_create_from_dylib_path("nope.dylib",
+                                                    &err);
   YR_ASSERT_EQUAL(collection, NULL);
   YR_ASSERT(err != NULL);
   free(err);

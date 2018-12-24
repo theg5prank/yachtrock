@@ -103,36 +103,42 @@ static void basic_run_suite_note_skipped(const char *file, size_t line, const ch
   fprintf(stderr, "Skipping test (%s:%zu, in %s): %s\n", file, line, funname, desc);
 }
 
+static int indentation_spaces(yr_result_store_t store)
+{
+  // ew?
+  unsigned depth = 0;
+  yr_result_store_t iter = store;
+  do {
+    iter = yr_result_store_get_parent(iter);
+  } while ( iter && ++depth );
+  return depth * 4;
+}
 static void yr_basic_store_opened_callback(yr_result_store_t store, void *refcon)
 {
-  if ( yr_result_store_get_parent(store) == NULL ) {
-    fprintf(stderr, "opening test suite %s\n", yr_result_store_get_name(store));
-  } else {
-    fprintf(stderr, "running test %s... ", yr_result_store_get_name(store));
-  }
+  fprintf(stderr, "%*sopening %s\n", indentation_spaces(store), "",
+          yr_result_store_get_name(store));
 }
+
 static void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon)
 {
-  if ( yr_result_store_get_parent(store) == NULL ) {
-    fprintf(stderr, "finished test suite %s\n", yr_result_store_get_name(store));
-  } else {
-    char *output = NULL;
-    switch ( yr_result_store_get_result(store) ) {
-    case YR_RESULT_UNSET:
-      output = "[NO RESULT (?)]";
-      break;
-    case YR_RESULT_PASSED:
-      output = "[OK]";
-      break;
-    case YR_RESULT_FAILED:
-      output = "[FAIL]";
-      break;
-    case YR_RESULT_SKIPPED:
-      output = "[SKIPPED]";
-      break;
-    }
-    fprintf(stderr, "%s\n", output);
+  char *output = NULL;
+  switch ( yr_result_store_get_result(store) ) {
+  case YR_RESULT_UNSET:
+    output = "[NO RESULT (?)]";
+    break;
+  case YR_RESULT_PASSED:
+    output = "[OK]";
+    break;
+  case YR_RESULT_FAILED:
+    output = "[FAIL]";
+    break;
+  case YR_RESULT_SKIPPED:
+    output = "[SKIPPED]";
+    break;
   }
+
+  fprintf(stderr, "%*sclosing %s %s\n", indentation_spaces(store), "",
+          yr_result_store_get_name(store), output);
 }
 
 struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS = {
