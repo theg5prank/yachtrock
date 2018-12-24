@@ -206,7 +206,8 @@ bool yr_recv_length(int sock, void *buf, size_t len, struct timeval *timeout, in
       return false;
     }
     assert(FD_ISSET(sock, &set));
-    ssize_t receive_iter = recv(sock, ((char *)buf) + received, len - received, 0);
+    ssize_t receive_iter;
+    EINTR_RETRY(receive_iter = recv(sock, ((char *)buf) + received, len - received, 0));
     if ( receive_iter < 0 ) {
       yr_warn("recv failed");
       return false;
@@ -246,7 +247,8 @@ bool yr_send_length(int sock, const void *buf, size_t len, struct timeval *timeo
 #if !__APPLE__ && !defined(BSD)
     flags |= MSG_NOSIGNAL;
 #endif
-    ssize_t send_iter = send(sock, ((const char *)buf) + sent, len - sent, flags);
+    ssize_t send_iter;
+    EINTR_RETRY(send_iter = send(sock, ((const char *)buf) + sent, len - sent, flags));
     if ( send_iter < 0 ) {
       yr_warn("send failed");
       return false;

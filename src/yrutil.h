@@ -2,6 +2,7 @@
 #define YACHTROCK_YRUTIL_H
 
 #include <stdnoreturn.h>
+#include <errno.h>
 
 #ifdef __has_include
 #  if __has_include(<err.h>)
@@ -53,6 +54,12 @@ extern void yr_warnc(int code, const char *fmt, ...);
 #define yr_warnc warnc
 
 #endif // !YR_HAVE_ERRC
+
+#define EINTR_RETRY(expr) do {                  \
+    if ( (expr) >= 0 || errno != EINTR ) {      \
+      break;                                    \
+    }                                           \
+  } while (1)
 
 extern char *yr_strdup(const char *in);
 extern noreturn void __yr_runtime_assert_fail__(char *fmt, ...);

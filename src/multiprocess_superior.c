@@ -24,15 +24,6 @@ static bool result_valid(yr_result_t result)
   return false;
 }
 
-static int eintr_waitpid(pid_t pid, int *stat_loc, int flags)
-{
-  int result;
-  do {
-    result = waitpid(pid, stat_loc, flags);
-  } while ( result < 0 && errno == EINTR );
-  return result;
-}
-
 static void drain_inferior_best_effort(struct inferior_handle *inferior_info)
 {
   struct timeval timeout;
@@ -43,11 +34,12 @@ static void drain_inferior_best_effort(struct inferior_handle *inferior_info)
   // if we drained the inferior is on the exit path so we can wait
   int wait_flags = drained ? 0 : WNOHANG;
   int stat_loc = 0;
-  int result = eintr_waitpid(inferior_info->pid, &stat_loc, wait_flags);
+  int result = 0;
+  EINTR_RETRY(result = waitpid(inferior_info->pid, &stat_loc, wait_flags));
   if ( result == 0 ) {
     yr_warnx("inferior not dead yet, forcibly killing");
     kill(inferior_info->pid, SIGKILL);
-    result = eintr_waitpid(inferior_info->pid, &stat_loc, 0);
+    EINTR_RETRY(result = waitpid(inferior_info->pid, &stat_loc, 0));
   }
   if ( result < 0 ) {
     yr_warn("waitpid failed");
@@ -60,7 +52,8 @@ static void forcibly_terminate_inferior(struct inferior_handle *inferior)
 {
   kill(inferior->pid, SIGKILL);
   int stat_loc = 0;
-  int result = waitpid(inferior->pid, &stat_loc, 0);
+  int result;
+  EINTR_RETRY(result = waitpid(inferior->pid, &stat_loc, 0));
   if ( result < 0 ) {
     yr_warn("waitpid failed");
   }
