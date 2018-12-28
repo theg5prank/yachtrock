@@ -35,7 +35,7 @@
 int main(void)
 {
   struct binding { char *name; unsigned long value; };
-#define BINDING(n) { .name = #n, .value = (getenv(#n) ? strtoul(#n, NULL, 0) : n) }
+#define BINDING(n) { .name = #n, .value = (getenv(#n) ? strtoul(getenv(#n), NULL, 0) : n) }
   struct binding bindings[] =  {
     BINDING(YACHTROCK_UNIXY),
     BINDING(YACHTROCK_POSIXY),
