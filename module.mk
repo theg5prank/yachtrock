@@ -100,7 +100,7 @@ endif
 install_yr_runtests: $(PREFIX)/bin/$(YR_RUNTESTS)
 
 $(PREFIX)/bin/$(YR_RUNTESTS): $(YR_RUNTESTS) $(PREFIX)/bin
-	install -vc $< $(PREFIX)/bin
+	install -m 0755 -vc $< $(PREFIX)/bin
 
 install_libyachtrock_dylib: $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
 
