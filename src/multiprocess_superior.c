@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "multiprocess_superior.h"
 #include "yrutil.h"

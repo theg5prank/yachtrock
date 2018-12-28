@@ -27,6 +27,8 @@ PRODUCTS :=
 
 MODULE_CLEANS :=
 
+GENERATED_HEADERS := 
+
 include $(patsubst %,%/module.mk,$(MODULES))
 
 ALLOBJ := $(patsubst %.c,%.o,$(filter %.c,$(CSRC)))
@@ -35,6 +37,8 @@ ALLOBJ += $(patsubst %.cc,%.o,$(filter %.cc,$(CPPSRC)))
 include $(ALLOBJ:.o=.d)
 
 OBJ := $(filter-out $(TESTOBJ),$(ALLOBJ))
+
+$(ALLOBJ:.o=.d): $(GENERATED_HEADERS)
 
 %.d: %.cc
 	./depend.sh `dirname $*.cc` $(CXXFLAGS) $*.cc > $@

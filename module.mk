@@ -1,5 +1,21 @@
 LIBYACHTROCK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
+define newline
+
+
+endef
+
+$(eval $(subst ^,$(newline),$(shell YACHTROCK_UNIXY=$(YACHTROCK_UNIXY) YACHTROCK_POSIXY=$(YACHTROCK_POSIXY) \
+	YACHTROCK_DLOPEN=$(YACHTROCK_DLOPEN) YACHTROCK_MULTIPROCESS=$(YACHTROCK_MULTIPROCESS) \
+	$(LIBYACHTROCK_DIR)detect_base_config.sh | tr '\n' '^' )))
+
+$(LIBYACHTROCK_DIR)public_headers/yachtrock/config.h: $(LIBYACHTROCK_DIR)write_config_h.sh
+	YACHTROCK_UNIXY=$(YACHTROCK_UNIXY) YACHTROCK_POSIXY=$(YACHTROCK_POSIXY) \
+		YACHTROCK_DLOPEN=$(YACHTROCK_DLOPEN) YACHTROCK_MULTIPROCESS=$(YACHTROCK_MULTIPROCESS) ./$< > $@
+
+YACHTROCK_GENERATED_HEADERS := $(LIBYACHTROCK_DIR)public_headers/yachtrock/config.h
+GENERATED_HEADERS += $(YACHTROCK_GENERATED_HEADERS)
+
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
@@ -12,13 +28,20 @@ LIBYACHTROCK_ARNAME := libyachtrock.a
 
 YR_RUNTESTS := yr_runtests
 
-PRODUCTS += $(LIBYACHTROCK_DYLIBNAME) $(LIBYACHTROCK_ARNAME) $(YR_RUNTESTS)
+PRODUCTS += $(LIBYACHTROCK_DYLIBNAME) $(LIBYACHTROCK_ARNAME)
+
+ifeq ($(YACHTROCK_MULTIPROCESS)$(YACHTROCK_DLOPEN),11)
+PRODUCTS += $(YR_RUNTESTS)
+endif
 
 MODULE_CLEANS += clean_libyachtrock
 
 LIBYACHTROCK_GENERATED_SRC := 
 LIBYACHTROCK_GENERATED_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_GENERATED_SRC))
-LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c yrutil.c multiprocess.c multiprocess_inferior.c multiprocess_superior.c
+LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c yrutil.c
+ifeq ($(YACHTROCK_MULTIPROCESS),1)
+LIBYACHTROCK_STATIC_SRC += multiprocess.c multiprocess_inferior.c multiprocess_superior.c
+endif
 LIBYACHTROCK_STATIC_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_STATIC_SRC))
 YR_RUNTESTS_SRC := yr_runtests.c
 YR_RUNTESTS_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(YR_RUNTESTS_SRC))
@@ -58,6 +81,8 @@ clean_libyachtrock:
 	rm -f $(LIBYACHTROCK_DYLIBNAME)
 	rm -f $(LIBYACHTROCK_OBJ)
 	rm -f $(LIBYACHTROCK_GENERATED_SRC)
+	rm -f $(YACHTROCK_GENERATED_HEADERS)
+	$(LIBYACHTROCK_DIR)detect_base_config.sh --clean
 
 install: install_libyachtrock_dylib install_libyachtrock_headers
 

@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <sysexits.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "yrutil.h"
 #include "multiprocess.h"
