@@ -19,7 +19,7 @@ clean_libyachtrock: clean_libyachtrock_tests
 test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase test_libyachtrock_run_under_store
 
 ifeq ($(YACHTROCK_MULTIPROCESS),1)
-test_libyachtrock += test_libyachtrock_multiprocess_basic
+test_libyachtrock: test_libyachtrock_multiprocess_basic
 endif
 
 test_libyachtrock_%: libyachtrock_%_tests_success
