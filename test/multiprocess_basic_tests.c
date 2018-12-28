@@ -4,6 +4,8 @@
 #include <string.h>
 #include <assert.h>
 
+static const char *env_key = "COLLECTION_CREATOR";
+
 void test_basic_assert_failure(yr_test_case_t testcase)
 {
   YR_ASSERT(1 == 2, "expected one to equal two, but it was: %d (pssst: this is a dummy failure)", 1);
@@ -79,7 +81,6 @@ struct proc_info
 {
   int argc;
   char **argv;
-  char **environ;
 };
 
 yr_test_suite_collection_t create_setups_teardowns_suite_collection(struct setup_teardown_test_data **refcon)
@@ -122,13 +123,126 @@ yr_test_suite_collection_t create_setups_teardowns_suite_collection(struct setup
   return collection;
 }
 
+YR_TESTCASE(test_aborting_pt1)
+{
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run == 1,
+            "case setup should be run one time now");
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run == 0,
+            "case teardown should be run zero times now");
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_setups_run == 1,
+            "suite setup should be run one time now");
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_teardowns_run == 0,
+            "suite teardown should be run zero times now");
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->num_cases_run++;
+}
+
+YR_TESTCASE(test_aborting_pt2)
+{
+  abort();
+}
+
+YR_TESTCASE(test_aborting_pt3)
+{
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run == 1);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run == 0);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_setups_run == 1);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_teardowns_run == 0);
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->num_cases_run++;
+}
+
+YR_TESTCASE(test_aborting_pt4)
+{
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run == 2);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run == 1);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_setups_run == 1);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_teardowns_run == 0);
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->num_cases_run++;
+}
+
+YR_TESTCASE(test_aborting_pt5)
+{
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_setups_run == 3);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->case_teardowns_run == 2);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_setups_run == 2);
+  YR_ASSERT(((struct setup_teardown_test_data *)testcase->suite->refcon)->suite_teardowns_run == 1);
+  ((struct setup_teardown_test_data *)testcase->suite->refcon)->num_cases_run++;
+}
+
+yr_test_suite_collection_t create_setups_teardowns_aborts_suite_collection(struct setup_teardown_test_data **refcon)
+{
+  struct setup_teardown_test_data *data = malloc(sizeof(struct setup_teardown_test_data));
+  memset(data, 0, sizeof(*data));
+
+  yr_test_suite_t suite1 = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * 4, 1);
+  suite1->name = "aborting test suite1";
+  suite1->refcon = data;
+  suite1->num_cases = 4;
+  suite1->lifecycle.setup_case = setup_test_case_setup;
+  suite1->lifecycle.teardown_case = setup_test_case_teardown;
+  suite1->lifecycle.setup_suite = setup_test_suite_setup;
+  suite1->lifecycle.teardown_suite = setup_test_suite_teardown;
+  suite1->cases[0].name = "test_aborting_pt1";
+  suite1->cases[0].testcase = test_aborting_pt1;
+  suite1->cases[0].suite = suite1;
+  suite1->cases[1].name = "test_aborting_pt2";
+  suite1->cases[1].testcase = test_aborting_pt2;
+  suite1->cases[1].suite = suite1;
+  suite1->cases[2].name = "test_aborting_pt3";
+  suite1->cases[2].testcase = test_aborting_pt3;
+  suite1->cases[2].suite = suite1;
+  suite1->cases[3].name = "test_aborting_pt4";
+  suite1->cases[3].testcase = test_aborting_pt4;
+  suite1->cases[3].suite = suite1;
+
+  yr_test_suite_t suite2 = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s), 1);
+  suite2->name = "aborting test suite2";
+  suite2->refcon = data;
+  suite2->num_cases = 1;
+  suite2->lifecycle.setup_case = setup_test_case_setup;
+  suite2->lifecycle.teardown_case = setup_test_case_teardown;
+  suite2->lifecycle.setup_suite = setup_test_suite_setup;
+  suite2->lifecycle.teardown_suite = setup_test_suite_teardown;
+  suite2->cases[0].name = "test_aborting_pt5";
+  suite2->cases[0].testcase = test_aborting_pt5;
+  suite2->cases[0].suite = suite2;
+
+  yr_test_suite_t suites[] = {suite1, suite2};
+
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(2, suites);
+  free(suite1);
+  free(suite2);
+  *refcon = data;
+  return collection;
+}
+
+static const struct {
+  const char *name;
+  yr_test_suite_collection_t (*collection_creator)(struct setup_teardown_test_data **refcon);
+} name_map[] = {
+  { "do_test_basics_setups_teardowns", create_setups_teardowns_suite_collection },
+  { "do_test_aborts", create_setups_teardowns_aborts_suite_collection },
+};
+
+static yr_test_suite_collection_t (*find_creator(const char *name))(struct setup_teardown_test_data **refcon)
+{
+  for ( size_t i = 0; i < sizeof(name_map) / sizeof(name_map[0]); i++ ) {
+    if ( strcmp(name_map[i].name, name) == 0 ) {
+      return name_map[i].collection_creator;
+    }
+  }
+  return NULL;
+}
+
+extern char **environ;
+
 void do_test_basics_setups_teardowns(yr_test_case_t tc)
 {
+  setenv(env_key, __FUNCTION__, 1);
   struct setup_teardown_test_data *data;
-  yr_test_suite_collection_t collection = create_setups_teardowns_suite_collection(&data);
+  yr_test_suite_collection_t collection = find_creator(__FUNCTION__)(&data);
   struct proc_info *info = tc->suite->refcon;
   yr_result_store_t store = yr_result_store_create(__FUNCTION__);
-  yr_run_suite_collection_under_store_multiprocess(info->argv[0], info->argv, info->environ,
+  yr_run_suite_collection_under_store_multiprocess(info->argv[0], info->argv, environ,
                                                    collection, store,
                                                    YR_BASIC_STDERR_RUNTIME_CALLBACKS);
   YR_ASSERT(yr_result_store_count_subresults(store) == 2);
@@ -148,22 +262,49 @@ void do_test_basics_setups_teardowns(yr_test_case_t tc)
   free(data);
 }
 
-extern char **environ;
+void do_test_aborts(yr_test_case_t tc)
+{
+  setenv(env_key, __FUNCTION__, 1);
+  struct setup_teardown_test_data *data;
+  yr_test_suite_collection_t collection = find_creator(__FUNCTION__)(&data);
+  struct proc_info *info = tc->suite->refcon;
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store_multiprocess(info->argv[0], info->argv, environ,
+                                                   collection, store,
+                                                   YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+  YR_ASSERT(yr_result_store_count_subresults(store) == 2);
+  yr_result_store_t first_suite = yr_result_store_get_subresult(store, 0);
+  YR_ASSERT(yr_result_store_count_subresults(first_suite) == 4);
+  YR_ASSERT(yr_result_store_get_result(yr_result_store_get_subresult(first_suite, 0)) == YR_RESULT_PASSED);
+  YR_ASSERT(yr_result_store_get_result(yr_result_store_get_subresult(first_suite, 1)) == YR_RESULT_FAILED);
+  YR_ASSERT(yr_result_store_get_result(yr_result_store_get_subresult(first_suite, 2)) == YR_RESULT_PASSED);
+  YR_ASSERT(yr_result_store_get_result(yr_result_store_get_subresult(first_suite, 3)) == YR_RESULT_PASSED);
+  YR_ASSERT(yr_result_store_get_result(first_suite) == YR_RESULT_FAILED);
+  yr_result_store_t second_suite = yr_result_store_get_subresult(store, 1);
+  YR_ASSERT(yr_result_store_count_subresults(second_suite) == 1);
+  YR_ASSERT(yr_result_store_get_result(yr_result_store_get_subresult(second_suite, 0)) == YR_RESULT_PASSED);
+  YR_ASSERT(yr_result_store_get_result(second_suite) == YR_RESULT_PASSED);
+  YR_ASSERT(yr_result_store_get_result(store) == YR_RESULT_FAILED);
+  YR_ASSERT(!yr_result_store_is_closed(store));
+  yr_result_store_destroy(store);
+  free(collection);
+  free(data);
+}
 
 int main(int argc, char **argv)
 {
   if ( yr_process_is_inferior() ) {
     struct setup_teardown_test_data *data;
-    yr_test_suite_collection_t collection = create_setups_teardowns_suite_collection(&data);
+    yr_test_suite_collection_t collection = find_creator(getenv(env_key))(&data);
     yr_inferior_checkin(collection, YR_BASIC_STDERR_RUNTIME_CALLBACKS);
     exit(EXIT_FAILURE); // shouldn't get here
   }
   struct proc_info info;
   info.argc = argc;
   info.argv = argv;
-  info.environ = environ;
   yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", &info, YR_NO_CALLBACKS,
-                                                         do_test_basics_setups_teardowns);
+                                                         do_test_basics_setups_teardowns,
+                                                         do_test_aborts);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;
