@@ -86,8 +86,15 @@ clean_libyachtrock:
 
 install: install_libyachtrock_dylib install_libyachtrock_headers
 
-ifneq (($filter $(YR_RUNTESTS),$(PRODUCTS)),)
+ifneq ($(filter $(YR_RUNTESTS),$(PRODUCTS)),)
 install: install_yr_runtests
+else
+install: uninstall_yr_runtests
+endif
+
+uninstall_yr_runtests:
+ifneq ($(shell [ -f $(PREFIX)/bin/$(YR_RUNTESTS) ] && echo "do it"),)
+	rm -f $(PREFIX)/bin/$(YR_RUNTESTS)
 endif
 
 install_yr_runtests: $(PREFIX)/bin/$(YR_RUNTESTS)
