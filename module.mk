@@ -86,10 +86,19 @@ clean_libyachtrock:
 
 install: install_libyachtrock_dylib install_libyachtrock_headers
 
+ifneq (($filter $(YR_RUNTESTS),$(PRODUCTS)),)
+install: install_yr_runtests
+endif
+
+install_yr_runtests: $(PREFIX)/bin/$(YR_RUNTESTS)
+
+$(PREFIX)/bin/$(YR_RUNTESTS): $(YR_RUNTESTS) $(PREFIX)/bin
+	install -vc $< $(PREFIX)/bin
+
 install_libyachtrock_dylib: $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
 
 $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_DYLIBNAME) $(PREFIX)/lib
-	install -vC $< $(PREFIX)/lib
+	install -vc $< $(PREFIX)/lib
 
 install_libyachtrock_headers: libyachtrock_headers_installation_dir libyachtrock_installed_headers
 
@@ -101,7 +110,7 @@ $(PREFIX)/include/yachtrock:
 libyachtrock_installed_headers: $(LIBYACHTROCK_HEADER_INSTALLED_FILES)
 
 $(PREFIX)/include/yachtrock/%.h: $(LIBYACHTROCK_DIR)public_headers/yachtrock/%.h
-	install -m 0644 -vC $< $(PREFIX)/include/yachtrock
+	install -m 0644 -vc $< $(PREFIX)/include/yachtrock
 
 libyachtrock_install_dev_dylib_links: $(PREFIX)/lib
 	ln -s `pwd`/$(LIBYACHTROCK $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
