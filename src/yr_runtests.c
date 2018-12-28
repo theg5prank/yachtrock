@@ -56,12 +56,13 @@ static yr_test_suite_collection_t create_collection_from_path(const char *path)
 
 int main(int argc, char **argv)
 {
+  progn = argv[0];
+
   if ( argc <= 1 ) {
     fprintf(stderr, "%s: no images provided to load tests from\n", argv[0]);
+    print_usage();
     return EXIT_FAILURE;
   }
-
-  progn = argv[0];
 
   // glibc says its getopt munges argv. *shrug*
   char **argv_copy = copy_argv(argv);
@@ -96,6 +97,11 @@ int main(int argc, char **argv)
     if ( collection != NULL ) {
       collections[num_collections_loaded++] = collection;
     }
+  }
+
+  if ( num_collections_loaded == 0 ) {
+    fprintf(stderr, "%s: all collections failed to load.\n", progn);
+    return EX_DATAERR;
   }
 
   yr_test_suite_collection_t final_collection =
