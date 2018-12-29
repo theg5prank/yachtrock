@@ -52,11 +52,17 @@ LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers
 CSRC += $(LIBYACHTROCK_SRC) $(YR_RUNTESTS_SRC)
 LIBYACHTROCK_OBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_SRC)))
 LIBYACHTROCK_LINKS = -lpthread
+
+YR_RUNTESTS_LINKS =
+
 ifeq ($(UNAME_S),Linux)
 LIBYACHTROCK_LINKS += -ldl
+YR_RUNTESTS_LINKS += -ldl
 endif
 
 YR_RUNTESTS_OBJ := $(patsubst %.c,%.o,$(filter %.c,$(YR_RUNTESTS_SRC)))
+
+$(YR_RUNTESTS_OBJ): CFLAGS += -D_POSIX_C_SOURCE=200809L
 
 include $(LIBYACHTROCK_DIR)module_tests.mk
 
@@ -77,7 +83,7 @@ $(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_OBJ)
 endif
 
 $(YR_RUNTESTS): $(YR_RUNTESTS_OBJ) $(LIBYACHTROCK_DYLIBNAME)
-	$(CC) $^ -o $@
+	$(CC) $^ -o $@ $(YR_RUNTESTS_LINKS)
 
 clean_libyachtrock:
 	rm -f $(LIBYACHTROCK_ARNAME)
