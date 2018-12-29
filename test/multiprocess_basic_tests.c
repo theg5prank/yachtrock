@@ -6,6 +6,14 @@
 
 static const char *env_key = "COLLECTION_CREATOR";
 
+struct proc_info
+{
+  int argc;
+  char **argv;
+};
+
+struct proc_info proc_info;
+
 void test_basic_assert_failure(yr_test_case_t testcase)
 {
   YR_ASSERT(1 == 2, "expected one to equal two, but it was: %d (pssst: this is a dummy failure)", 1);
@@ -76,12 +84,6 @@ void test_suite_and_case_setups_run_pt3(yr_test_case_t testcase)
             "suite teardown should be run once now");
   YR_FAIL("unconditional fail");
 }
-
-struct proc_info
-{
-  int argc;
-  char **argv;
-};
 
 yr_test_suite_collection_t create_setups_teardowns_suite_collection(struct setup_teardown_test_data **refcon)
 {
@@ -215,12 +217,40 @@ yr_test_suite_collection_t create_setups_teardowns_aborts_suite_collection(struc
   return collection;
 }
 
+YR_TESTCASE(dummy1) { }
+YR_TESTCASE(dummy2)
+{
+  YR_RECORD_SKIP("because I said so");
+}
+
+yr_test_suite_collection_t create_test_suspension_final_suite_collection(struct setup_teardown_test_data **refcon)
+{
+  yr_test_suite_t suite1 = yr_create_suite_from_functions("suspension final suite", NULL, YR_NO_CALLBACKS,
+                                                          dummy1, dummy2);
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(1, &suite1);
+  free(suite1);
+  return collection;
+}
+
+static void intermediate(yr_test_case_t testcase);
+
+yr_test_suite_collection_t create_test_suspension_suite_collection(struct setup_teardown_test_data **refcon)
+{
+  yr_test_suite_t suite1 = yr_create_suite_from_functions("intermediate suite", NULL, YR_NO_CALLBACKS,
+                                                          intermediate);
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(1, &suite1);
+  free(suite1);
+  return collection;
+}
+
 static const struct {
   const char *name;
   yr_test_suite_collection_t (*collection_creator)(struct setup_teardown_test_data **refcon);
 } name_map[] = {
   { "do_test_basics_setups_teardowns", create_setups_teardowns_suite_collection },
   { "do_test_aborts", create_setups_teardowns_aborts_suite_collection },
+  { "do_test_suspension", create_test_suspension_suite_collection },
+  { "intermediate", create_test_suspension_final_suite_collection },
 };
 
 static yr_test_suite_collection_t (*find_creator(const char *name))(struct setup_teardown_test_data **refcon)
@@ -234,6 +264,28 @@ static yr_test_suite_collection_t (*find_creator(const char *name))(struct setup
 }
 
 extern char **environ;
+
+static void intermediate(yr_test_case_t testcase)
+{
+  yr_suspend_inferiority();
+  setenv(env_key, __FUNCTION__, 1);
+  yr_test_suite_collection_t collection = find_creator(__FUNCTION__)(NULL);
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store_multiprocess(proc_info.argv[0], proc_info.argv, environ,
+                                                   collection, store, YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+  yr_result_store_close(store);
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(store), 1);
+  yr_result_store_t suite_store = yr_result_store_get_subresult(store, 0);
+  YR_ASSERT_EQUAL(yr_result_store_count_subresults(suite_store), 2);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(yr_result_store_get_subresult(suite_store, 0)), YR_RESULT_PASSED);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(yr_result_store_get_subresult(suite_store, 1)), YR_RESULT_SKIPPED);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(suite_store), YR_RESULT_PASSED);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
+  yr_result_store_destroy(store);
+  free(collection);
+  yr_reset_inferiority();
+  YR_ASSERT(yr_process_is_inferior());
+}
 
 void do_test_basics_setups_teardowns(yr_test_case_t tc)
 {
@@ -291,20 +343,36 @@ void do_test_aborts(yr_test_case_t tc)
   free(data);
 }
 
+void do_test_suspension(yr_test_case_t tc)
+{
+  setenv(env_key, __FUNCTION__, 1);
+  yr_test_suite_collection_t collection = find_creator(__FUNCTION__)(NULL);
+  struct proc_info *info = tc->suite->refcon;
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  yr_run_suite_collection_under_store_multiprocess(info->argv[0], info->argv, environ, collection, store,
+                                                   YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+  yr_result_store_close(store);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
+
+  yr_result_store_destroy(store);
+  free(collection);
+}
+
 int main(int argc, char **argv)
 {
+  proc_info.argc = argc;
+  proc_info.argv = argv;
+
   if ( yr_process_is_inferior() ) {
     struct setup_teardown_test_data *data;
     yr_test_suite_collection_t collection = find_creator(getenv(env_key))(&data);
     yr_inferior_checkin(collection, YR_BASIC_STDERR_RUNTIME_CALLBACKS);
     exit(EXIT_FAILURE); // shouldn't get here
   }
-  struct proc_info info;
-  info.argc = argc;
-  info.argv = argv;
-  yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", &info, YR_NO_CALLBACKS,
+  yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", &proc_info, YR_NO_CALLBACKS,
                                                          do_test_basics_setups_teardowns,
-                                                         do_test_aborts);
+                                                         do_test_aborts,
+                                                         do_test_suspension);
   if ( yr_basic_run_suite(suite) ) {
     fprintf(stderr, "some tests failed!\n");
     return EXIT_FAILURE;

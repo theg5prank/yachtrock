@@ -33,7 +33,11 @@ static inline yr_result_t merge_result(yr_result_t old, yr_result_t new)
   case YR_RESULT_FAILED:
     return old;
   case YR_RESULT_SKIPPED:
-    return new;
+    if ( new == YR_RESULT_FAILED ) {
+      return new;
+    } else {
+      return old;
+    }
   }
   YR_RUNTIME_ASSERT(false, "unhandled result case in %s", __FUNCTION__);
 }

@@ -117,7 +117,7 @@ static size_t environ_count(char **environ)
 // Spawn inferior process, return socket to it and pid by reference.
 // return true on success
 bool yr_spawn_inferior(char *path, char **argv, char **environ,
-                          struct inferior_handle *out_result)
+                       struct inferior_handle *out_result)
 {
   int result = -1;
 
@@ -163,7 +163,15 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   }
 
   char **new_env_place = new_environ;
-  while ( *++new_env_place );
+  // Find either SOCKET_ENV_VAR or the fist NULL
+  for ( ; *new_env_place; new_env_place++ ) {
+    char *found_var = strstr(*new_env_place, SOCKET_ENV_VAR "=");
+    if ( found_var == *new_env_place ) {
+      free(*new_env_place);
+      *new_env_place = NULL;
+      break;
+    }
+  }
   YR_RUNTIME_ASSERT((new_env_place - new_environ) <= (environ_entries + 1),
                     "overflow of environment");
   char _;
@@ -182,6 +190,17 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   if ( error != 0 ) {
     yr_warnc(error, "posix_spawn_file_actions_addclose failed");
     goto out;
+  }
+
+  /* If we have been invoked recursively (possible with inferiority suspension), add a close for OUR
+   * inferior socket
+   */
+  if ( _yr_real_inferior_socket() != -1 ) {
+    error = posix_spawn_file_actions_addclose(&file_actions, _yr_real_inferior_socket());
+    if ( error != 0 ) {
+      yr_warnc(error, "posix_spawn_file_actions_addclose failed (inferior socket)");
+      goto out;
+    }
   }
 
   pid_t pid;
