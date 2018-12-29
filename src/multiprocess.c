@@ -27,6 +27,21 @@
 #include "multiprocess_inferior.h"
 #include "multiprocess_superior.h"
 
+#if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
+#define USE_STDATOMIC 1
+#endif
+
+#if USE_STDATOMIC
+#include <stdatomic.h>
+typedef volatile _Atomic unsigned long inferiority_suspension_counter_t;
+#define SUSPEND_INC(counter) ((void)atomic_fetch_add(&counter, 1))
+#define SUSPEND_DEC(counter) (atomic_fetch_sub(&counter, 1) - 1)
+#define SUSPEND_CHECK(counter) (atomic_load(&counter) > 0)
+#else
+#warning "atomics not available, inferior suspension will not be threadsafe"
+#error "actually they aren't implemented. whoopsie!"
+#endif
+
 const struct inferior_handle YR_INFERIOR_HANDLE_NULL = {
   .pid = -1,
   .socket = -1
@@ -63,15 +78,33 @@ static void init_socket_fd(void)
     socket_fd = result;
   }
 }
-int yr_inferior_socket(void)
+static int _yr_real_inferior_socket(void)
 {
   pthread_once(&init_socket_once, init_socket_fd);
   return socket_fd;
 }
 
+static inferiority_suspension_counter_t suspension_counter = 0;
+
+int yr_inferior_socket(void)
+{
+  return SUSPEND_CHECK(suspension_counter) ? -1 : _yr_real_inferior_socket();
+}
+
 bool yr_process_is_inferior(void)
 {
-  return yr_inferior_socket() >= 0;
+  return !SUSPEND_CHECK(suspension_counter) && _yr_real_inferior_socket() >= 0;
+}
+
+void yr_suspend_inferiority(void)
+{
+  (void)_yr_real_inferior_socket();
+  SUSPEND_INC(suspension_counter);
+}
+
+void yr_reset_inferiority(void)
+{
+  SUSPEND_DEC(suspension_counter);
 }
 
 static size_t environ_count(char **environ)

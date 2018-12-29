@@ -69,6 +69,26 @@ YACHTROCK_EXTERN bool yr_process_is_inferior(void);
 YACHTROCK_EXTERN noreturn void yr_inferior_checkin(yr_test_suite_collection_t collection,
                                                    struct yr_runtime_callbacks runtime_callbacks);
 
+/**
+ * If the process is an inferior, stop being an inferior.
+ *
+ * This means, for instance, that functions like yr_process_is_inferior will return false and the
+ * process will be a superior process when calling yr_run_suite_collection_under_store_multiprocess.
+ *
+ * This can be undone by calling yr_reset_inferiority. The calls increment and decrement a counter,
+ * so if this function is called multiple times, yr_reset_inferiority must be called that same
+ * number of times to return the process to its initial state. If the process was never an inferior,
+ * this function (and yr_reset_inferiority) does nothing.
+ *
+ * This is probably not a very useful function unless you are testing libyachtrock.
+ */
+YACHTROCK_EXTERN void yr_suspend_inferiority(void);
+
+/**
+ * Undo a call to yr_suspend_inferiority.
+ */
+YACHTROCK_EXTERN void yr_reset_inferiority(void);
+
 #endif
 
 #endif
