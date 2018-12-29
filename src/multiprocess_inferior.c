@@ -80,7 +80,9 @@ static bool send_result_update(int sock, size_t suiteid, size_t caseid, yr_resul
   struct yr_message *update_message = yr_message_create_with_payload(MESSAGE_CASE_RESULT,
                                                                      payload_buf,
                                                                      payload_len);
-  return yr_send_message(sock, update_message, NULL);
+  bool ok = yr_send_message(sock, update_message, NULL);
+  free(update_message);
+  return ok;
 }
 
 static void note_potential_new_result(struct inferior_runtime_context *context,
@@ -160,6 +162,7 @@ static bool handle_invoke_case(int sock, struct yr_message *invoke_case_message,
                                                                             payload_buf,
                                                                             payload_len);
   bool responded_ok = yr_send_message(sock, case_finished_message, NULL);
+  free(case_finished_message);
 
   return responded_ok;
 }
