@@ -51,7 +51,10 @@ LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers
 
 CSRC += $(LIBYACHTROCK_SRC) $(YR_RUNTESTS_SRC)
 LIBYACHTROCK_OBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_SRC)))
-LIBYACHTROCK_LINKS = -ldl -lpthread
+LIBYACHTROCK_LINKS = -lpthread
+ifeq ($(UNAME_S),Linux)
+LIBYACHTROCK_LINKS += -ldl
+endif
 
 YR_RUNTESTS_OBJ := $(patsubst %.c,%.o,$(filter %.c,$(YR_RUNTESTS_SRC)))
 
