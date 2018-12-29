@@ -104,7 +104,7 @@ void yr_suspend_inferiority(void)
 
 void yr_reset_inferiority(void)
 {
-  SUSPEND_DEC(suspension_counter);
+  (void)SUSPEND_DEC(suspension_counter);
 }
 
 static size_t environ_count(char **environ)
