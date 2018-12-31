@@ -58,7 +58,10 @@ YR_RUNTESTS_LINKS =
 ifeq ($(UNAME_S),Linux)
 LIBYACHTROCK_LINKS += -ldl
 YR_RUNTESTS_LINKS += -ldl
+else ifeq ($(UNAME_S),SunOS)
+LIBYACHTROCK_LINKS += -lsocket -lnsl
 endif
+
 
 YR_RUNTESTS_OBJ := $(patsubst %.c,%.o,$(filter %.c,$(YR_RUNTESTS_SRC)))
 
