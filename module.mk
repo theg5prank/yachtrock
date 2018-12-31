@@ -62,6 +62,10 @@ else ifeq ($(UNAME_S),SunOS)
 LIBYACHTROCK_LINKS += -lsocket -lnsl
 endif
 
+ifneq ($(UNAME_S),Darwin)
+YR_RUNTESTS_LINKS += -Wl,-rpath,$(PREFIX)/lib
+endif
+
 
 YR_RUNTESTS_OBJ := $(patsubst %.c,%.o,$(filter %.c,$(YR_RUNTESTS_SRC)))
 
