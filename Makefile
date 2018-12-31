@@ -1,5 +1,8 @@
 C++ = c++
-CC = cc
+
+ifeq ($(shell uname),SunOS)
+	CC=gcc
+endif
 
 IS_GCC := $(shell ($(CC) --version | grep 'Copyright.*Free Software Foundation') > /dev/null && echo "YES")
 
