@@ -1,5 +1,10 @@
 C++ = c++
-CC = cc
+
+INSTALLER:=./install_wrapper.sh
+
+ifeq ($(shell uname),SunOS)
+	CC=gcc
+endif
 
 IS_GCC := $(shell ($(CC) --version | grep 'Copyright.*Free Software Foundation') > /dev/null && echo "YES")
 
@@ -60,10 +65,10 @@ debugmk:
 all: $(PRODUCTS)
 
 $(PREFIX)/lib:
-	install -dv $(PREFIX)/lib
+	$(INSTALLER) -d $(PREFIX)/lib
 
 $(PREFIX)/include:
-	install -dv $(PREFIX)/include
+	$(INSTALLER) -d $(PREFIX)/include
 
 install: all
 

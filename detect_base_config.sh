@@ -30,9 +30,16 @@ if [ ! -n "$YACHTROCK_MULTIPROCESS" ]; then
     unset YACHTROCK_MULTIPROCESS
 fi
 
-make -s -f - $command <<EOF
-DIR := $dir/
+if uname | grep SunOS > /dev/null; then
+    COMPILER_OVERRIDE_SNIPPET="CC=gcc"
+else
+    COMPILER_OVERRIDE_SNIPPET=""
+fi
 
+make -s -f - $command <<EOF
+DIR=$dir/
+CFLAGS += -D_POSIX_C_SOURCE=200809L
+$COMPILER_OVERRIDE_SNIPPET
 print_platform_config: \$(DIR)detect_base_config
 	\$(DIR)detect_base_config
 
@@ -40,3 +47,4 @@ clean:
 	rm -f \$(DIR)detect_base_config
 
 EOF
+

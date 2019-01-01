@@ -28,6 +28,7 @@ test_libyachtrock_%: libyachtrock_%_tests_success
 libyachtrock_%_tests_success: $(LIBYACHTROCK_DIR)test/%_tests
 	./$<
 
+ifeq ($(YACHTROCK_DLOPEN),1)
 $(LIBYACHTROCK_DIR)test/dummy_module.o: CFLAGS += -fPIC
 ifeq ($(UNAME_S),Darwin)
 $(LIBYACHTROCK_DIR)test/dummy_module.dylib: $(LIBYACHTROCK_DIR)test/dummy_module.o $(LIBYACHTROCK_ARNAME)
@@ -39,6 +40,7 @@ endif
 libyachtrock_testcase_tests_success: $(LIBYACHTROCK_DIR)test/testcase_tests $(LIBYACHTROCK_DIR)test/dummy_module.dylib
 	$^
 LIBYACHTROCK_TESTSUPPORT += $(LIBYACHTROCK_DIR)test/dummy_module.dylib
+endif
 
 $(LIBYACHTROCK_DIR)test/%_tests: $(LIBYACHTROCK_DIR)test/%_tests.o $(LIBYACHTROCK_ARNAME)
 	$(CC) $^ $(LIBYACHTROCK_LINKS) -o $@
