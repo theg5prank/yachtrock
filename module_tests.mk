@@ -1,6 +1,6 @@
 TESTS += test_libyachtrock
 
-LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c dummy_module.c run_under_store_tests.c
+LIBYACHTROCK_TESTSRC := basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c dummy_module.c run_under_store_tests.c multiprocess_basic_tests.c
 LIBYACHTROCK_TESTSRC := $(patsubst %,$(LIBYACHTROCK_DIR)test/%,$(LIBYACHTROCK_TESTSRC))
 CSRC += $(LIBYACHTROCK_TESTSRC)
 LIBYACHTROCK_TESTOBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_TESTSRC)))
@@ -18,12 +18,17 @@ clean_libyachtrock: clean_libyachtrock_tests
 
 test_libyachtrock: test_libyachtrock_basic test_libyachtrock_result_store test_libyachtrock_assertion test_libyachtrock_testcase test_libyachtrock_run_under_store
 
+ifeq ($(YACHTROCK_MULTIPROCESS),1)
+test_libyachtrock: test_libyachtrock_multiprocess_basic
+endif
+
 test_libyachtrock_%: libyachtrock_%_tests_success
 	true
 
 libyachtrock_%_tests_success: $(LIBYACHTROCK_DIR)test/%_tests
 	./$<
 
+ifeq ($(YACHTROCK_DLOPEN),1)
 $(LIBYACHTROCK_DIR)test/dummy_module.o: CFLAGS += -fPIC
 ifeq ($(UNAME_S),Darwin)
 $(LIBYACHTROCK_DIR)test/dummy_module.dylib: $(LIBYACHTROCK_DIR)test/dummy_module.o $(LIBYACHTROCK_ARNAME)
@@ -35,6 +40,7 @@ endif
 libyachtrock_testcase_tests_success: $(LIBYACHTROCK_DIR)test/testcase_tests $(LIBYACHTROCK_DIR)test/dummy_module.dylib
 	$^
 LIBYACHTROCK_TESTSUPPORT += $(LIBYACHTROCK_DIR)test/dummy_module.dylib
+endif
 
 $(LIBYACHTROCK_DIR)test/%_tests: $(LIBYACHTROCK_DIR)test/%_tests.o $(LIBYACHTROCK_ARNAME)
 	$(CC) $^ $(LIBYACHTROCK_LINKS) -o $@

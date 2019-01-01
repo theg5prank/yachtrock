@@ -281,10 +281,12 @@ static YR_TESTCASE(placeholder_test) {}
 
 int main(int argc, char **argv)
 {
+#if YACHTROCK_DLOPEN
   if ( argc < 2 ) {
     fprintf(stderr, "not passed dummy module name?\n");
     abort();
   }
+#endif
   struct testcase_tests_suite_context context;
   context.dummy_module_path = argv[1];
   yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", &context,

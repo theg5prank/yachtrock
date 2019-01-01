@@ -216,6 +216,13 @@ yr_test_suite_collection_create_from_collections(size_t num_collections,
   }
   va_end(ap);
 
+  return yr_test_suite_collection_create_from_collection_array(num_collections, collections);
+}
+
+yr_test_suite_collection_t
+yr_test_suite_collection_create_from_collection_array(size_t num_collections,
+                                                      yr_test_suite_collection_t *collections)
+{
   // collect all suites
   size_t num_suites = 0;
   for ( size_t i = 0; i < num_collections; i++ ) {
