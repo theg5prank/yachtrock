@@ -29,9 +29,6 @@
 #define YACHTROCK_DLOPEN 0
 #endif
 
-#define STR(X) #X
-#define XSTR(X) STR(X)
-
 int main(void)
 {
   struct binding { char *name; unsigned long value; };
