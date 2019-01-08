@@ -4,3 +4,6 @@
 *.dylib
 *.so
 test/*tests
+detect_base_config
+yr_runtests
+public_headers/yachtrock/config.h
