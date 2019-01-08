@@ -17,7 +17,7 @@ struct inferior_state {
 static bool send_collection_desc_message(int sock, yr_test_suite_collection_t collection)
 {
   size_t collection_desc_size = yr_multiprocess_collection_desc(NULL, 0, collection);
-  struct yr_message *message = malloc(sizeof(struct yr_message) + collection_desc_size);
+  struct yr_message *message = yr_malloc(sizeof(struct yr_message) + collection_desc_size);
   size_t filled_out_size = yr_multiprocess_collection_desc(message->payload,
                                                            collection_desc_size,
                                                            collection);

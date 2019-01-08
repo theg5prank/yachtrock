@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "yrutil.h"
+
 struct opened_testsuite
 {
   struct yr_runtime_callbacks saved_runtime_callbacks;
@@ -30,7 +32,7 @@ static struct opened_testsuite *open_suite(yr_test_suite_t suite,
                                            struct yr_runtime_callbacks runtime_callbacks,
                                            struct yr_result_hooks result_hooks)
 {
-  struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
+  struct opened_testsuite *collection = yr_malloc(sizeof(struct opened_testsuite));
   _init_opened_suite_except_store(collection, suite, runtime_callbacks);
   collection->store = yr_result_store_create_with_hooks(suite->name, result_hooks);
   collection->owns_result_store = true;
@@ -41,7 +43,7 @@ static struct opened_testsuite *open_suite_as_child_of_store(yr_test_suite_t sui
                                                              struct yr_runtime_callbacks runtime_callbacks,
                                                              yr_result_store_t root)
 {
-  struct opened_testsuite *collection = malloc(sizeof(struct opened_testsuite));
+  struct opened_testsuite *collection = yr_malloc(sizeof(struct opened_testsuite));
   _init_opened_suite_except_store(collection, suite, runtime_callbacks);
   collection->store = yr_result_store_open_subresult(root, suite->name);
   collection->owns_result_store = false;

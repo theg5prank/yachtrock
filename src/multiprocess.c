@@ -123,7 +123,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
 
   // copy environ but add one extra space at the end
   size_t environ_entries = environ_count(environ);
-  char **new_environ = malloc((environ_entries + 2) * sizeof(char *));
+  char **new_environ = yr_malloc((environ_entries + 2) * sizeof(char *));
   for ( size_t i = 0; i < environ_entries + 2; i++ ) {
     new_environ[i] = NULL;
   }
@@ -177,7 +177,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   char _;
   char *fmt = SOCKET_ENV_VAR"=%d";
   size_t necessary = snprintf(&_, 0, fmt, sockets[1]) + 1;
-  *new_env_place = malloc(necessary);
+  *new_env_place = yr_malloc(necessary);
   snprintf(*new_env_place, necessary, fmt, sockets[1]);
 
   posix_spawn_file_actions_t file_actions;
@@ -370,7 +370,7 @@ bool yr_recv_message(int sock, struct yr_message **out_message, struct timeval *
   ok = ok && yr_recv_uint32(sock, &payload_length, timeout);
   struct yr_message *message = NULL;
   if ( ok ) {
-    message = malloc(sizeof(struct yr_message) + payload_length);
+    message = yr_malloc(sizeof(struct yr_message) + payload_length);
     message->message_code = message_code;
     message->payload_length = payload_length;
     ok = ok && yr_recv_length(sock, message->payload, payload_length, timeout, 0);
@@ -423,7 +423,7 @@ struct yr_message *yr_message_create_with_payload(enum yr_inferior_message messa
                                                   void *payload, size_t payload_length)
 {
   size_t objlen = sizeof(struct yr_message) + payload_length;
-  struct yr_message *result = malloc(objlen);
+  struct yr_message *result = yr_malloc(objlen);
   result->message_code = message;
   result->payload_length = payload_length;
   if ( payload_length ) {

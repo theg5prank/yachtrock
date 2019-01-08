@@ -22,7 +22,7 @@ static char **copy_argv(char **input)
 {
   size_t entries = 0; /* includes NULL terminator */
   while( input[entries++] );
-  char **retval = malloc(sizeof(char *) * entries);
+  char **retval = yr_malloc(sizeof(char *) * entries);
   for ( size_t i = 0; i < entries; i++ ) {
     retval[i] = input[i] ? yr_strdup(input[i]) : NULL;
   }

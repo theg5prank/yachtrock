@@ -93,6 +93,9 @@ yr_test_suite_collection_create_from_collection_array(size_t num_collections,
 typedef yr_test_suite_collection_t
 (*yr_module_discoverer_t)(unsigned discover_version, char **errmsg);
 
+YACHTROCK_EXTERN char *
+_yr_create_version_mismatch_error(unsigned discover_version, unsigned yr_version);
+
 #define YACHTROCK_DEFINE_TEST_SUITE_COLLECTION_DISCOVERER()             \
   static yr_test_suite_collection_t                                     \
   YACHTROCK_MODULE_DISCOVER_NAME ## __impl(unsigned discover_version,   \
@@ -101,13 +104,10 @@ typedef yr_test_suite_collection_t
                                                                    char **errmsg) \
   {                                                                     \
     if ( discover_version > YACHTROCK_DISCOVER_VERSION ) {              \
-      char _;                                                           \
-      char *fmt = "Discover version %d is greater than supported version %d"; \
-      int required = snprintf(&_, 0, fmt, discover_version,             \
-                              YACHTROCK_DISCOVER_VERSION) + 1;          \
-      *errmsg = malloc(required);                                       \
-      snprintf(*errmsg, required, fmt, discover_version,                \
-               YACHTROCK_DISCOVER_VERSION);                             \
+      if ( errmsg ) {                                                   \
+        *errmsg = _yr_create_version_mismatch_error(discover_version,   \
+                                                    YACHTROCK_DISCOVER_VERSION); \
+      }                                                                 \
       return NULL;                                                      \
     }                                                                   \
     return (YACHTROCK_MODULE_DISCOVER_NAME ## __impl)(discover_version, \

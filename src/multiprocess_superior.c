@@ -91,7 +91,7 @@ static bool check_collection(struct inferior_handle inferior,
   }
 
   collection_len = yr_multiprocess_collection_desc(NULL, 0, collection);
-  collection_desc = malloc(collection_len);
+  collection_desc = yr_malloc(collection_len);
   filled_out_size = yr_multiprocess_collection_desc(collection_desc, collection_len,
                                                            collection);
   assert(filled_out_size == collection_len);

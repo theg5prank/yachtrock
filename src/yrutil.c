@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <unistd.h>
+#include <stdbool.h>
 
 #include "yrutil.h"
 
@@ -104,7 +106,7 @@ void yr_warnc(int code, const char *fmt, ...)
 char *yr_strdup(const char *in)
 {
   YR_RUNTIME_ASSERT(in, "%s called with NULL", __FUNCTION__);
-  char *result = malloc(strlen(in) + 1);
+  char *result = yr_malloc(strlen(in) + 1);
   strcpy(result, in);
   return result;
 }
@@ -118,4 +120,36 @@ void __yr_runtime_assert_fail__(char *fmt, ...)
   va_end(ap);
   fprintf(stderr, "\nbreak on %s to debug\n", __FUNCTION__);
   abort();
+}
+
+static void yr_allocation_failure(void)
+{
+  sleep(1);
+}
+
+void *yr_malloc(size_t size)
+{
+  void *result = NULL;
+  do {
+    result = malloc(size);
+  } while ( result == NULL && (yr_allocation_failure(), true) );
+  return result;
+}
+
+void *yr_calloc(size_t size, size_t nobj)
+{
+  void *result = NULL;
+  do {
+    result = calloc(size, nobj);
+  } while ( result == NULL && (yr_allocation_failure(), true) );
+  return result;
+}
+
+void *yr_realloc(void *ptr, size_t size)
+{
+  void *result = NULL;
+  do {
+    result = realloc(ptr, size);
+  } while ( (result == NULL && size != 0) && (yr_allocation_failure(), true) );
+  return result;
 }

@@ -70,4 +70,8 @@ extern noreturn void __yr_runtime_assert_fail__(char *fmt, ...);
     }                                           \
   } while ( 0 )
 
+extern void *yr_malloc(size_t size);
+extern void *yr_calloc(size_t size, size_t nobj);
+extern void *yr_realloc(void *ptr, size_t size);
+
 #endif

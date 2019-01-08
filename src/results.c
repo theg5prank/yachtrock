@@ -78,7 +78,7 @@ static void yr_result_store_init(const char *name, yr_result_store_t store)
     name = "(unnamed)";
   }
   store->open = true;
-  char *name_cpy = malloc(strlen(name) + 1);
+  char *name_cpy = yr_malloc(strlen(name) + 1);
   strcpy(name_cpy, name);
   store->name = name_cpy;
   store->result = YR_RESULT_UNSET;
@@ -92,9 +92,9 @@ static void yr_result_store_init(const char *name, yr_result_store_t store)
 yr_result_store_t yr_result_store_create_with_hooks(const char *name,
                                                     struct yr_result_hooks hooks)
 {
-  yr_result_store_t retval = malloc(sizeof(struct yr_result_store));
+  yr_result_store_t retval = yr_malloc(sizeof(struct yr_result_store));
   yr_result_store_init(name, retval);
-  retval->hooks = malloc(sizeof(struct yr_result_hooks));
+  retval->hooks = yr_malloc(sizeof(struct yr_result_hooks));
   *(retval->hooks) = hooks;
   if ( hooks.store_opened ) {
     hooks.store_opened(retval, hooks.context);
@@ -104,7 +104,7 @@ yr_result_store_t yr_result_store_create_with_hooks(const char *name,
 
 yr_result_store_t yr_result_store_create(const char *name)
 {
-  yr_result_store_t retval = malloc(sizeof(struct yr_result_store));
+  yr_result_store_t retval = yr_malloc(sizeof(struct yr_result_store));
   yr_result_store_init(name, retval);
   return retval;
 }
@@ -149,7 +149,7 @@ yr_result_store_t yr_result_store_open_subresult(yr_result_store_t store, const 
   store_mut_check(store);
   if ( store->subresult_count == store->subresult_size ) {
     size_t new_size = store->subresult_size == 0 ? 10 : 1.625 * store->subresult_size;
-    store->subresults = realloc(store->subresults, new_size * sizeof(yr_result_store_t));
+    store->subresults = yr_realloc(store->subresults, new_size * sizeof(yr_result_store_t));
     store->subresult_size = new_size;
   }
   yr_result_store_t subresult = yr_result_store_create(name);
@@ -290,7 +290,7 @@ size_t yr_result_store_get_description(yr_result_store_t store, char *buf, size_
 char *yr_result_store_copy_description(yr_result_store_t store)
 {
   size_t necessary = yr_result_store_get_description(store, NULL, 0);
-  char *buf = malloc(necessary);
+  char *buf = yr_malloc(necessary);
   yr_result_store_get_description(store, buf, necessary);
   return buf;
 }

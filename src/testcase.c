@@ -68,7 +68,7 @@ _yr_create_suite_from_functions(const char *name,
 {
   size_t n_names = num_names(cs_names);
   size_t names_size = ginormous_namestring_size(cs_names);
-  yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * n_names + names_size, 1);
+  yr_test_suite_t suite = yr_calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * n_names + names_size, 1);
   suite->name = name;
   suite->refcon = suite_refcon;
   suite->lifecycle = callbacks;
@@ -113,7 +113,7 @@ _yr_create_suite_from_functions(const char *name,
 yr_test_suite_t
 yr_create_blank_suite(size_t num_cases)
 {
-  yr_test_suite_t suite = calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * num_cases, 1);
+  yr_test_suite_t suite = yr_calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * num_cases, 1);
   suite->num_cases = num_cases;
   for ( size_t i = 0; i < num_cases; i++ ) {
     suite->cases[i].suite = suite;
@@ -184,7 +184,7 @@ yr_test_suite_collection_create_from_suites(size_t num_suites, yr_test_suite_t *
   size_t pointer_memory_needed = sizeof(yr_test_suite_t) * num_suites;
   size_t suite_alignment_padding = SUITE_ALIGNMENT - ( pointer_memory_needed % SUITE_ALIGNMENT );
   pointer_memory_needed += suite_alignment_padding;
-  yr_test_suite_collection_t collection = malloc(sizeof(struct yr_test_suite_collection) +
+  yr_test_suite_collection_t collection = yr_malloc(sizeof(struct yr_test_suite_collection) +
                                                  pointer_memory_needed +
                                                  suite_memory_needed);
   collection->num_suites = num_suites;
@@ -244,6 +244,16 @@ yr_test_suite_collection_create_from_collection_array(size_t num_collections,
 }
 
 #if YACHTROCK_DLOPEN
+
+char *_yr_create_version_mismatch_error(unsigned discover_version, unsigned yr_version)
+{
+  char _;
+  static const char *fmt = "Discover version %d is greater than supported version %d";
+  int required = snprintf(&_, 0, fmt, discover_version, yr_version) + 1;
+  char *alloc_msg = yr_malloc(required);
+  snprintf(alloc_msg, required, fmt, discover_version, yr_version);
+  return alloc_msg;
+}
 
 static const char discoverer_sym[] = YR_XSTR(YACHTROCK_MODULE_DISCOVER_NAME);
 
