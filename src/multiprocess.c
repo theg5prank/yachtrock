@@ -27,19 +27,74 @@
 #include "multiprocess_inferior.h"
 #include "multiprocess_superior.h"
 
-#if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
-#define USE_STDATOMIC 1
-#endif
+#if YR_USE_STDATOMIC
 
-#if USE_STDATOMIC
 #include <stdatomic.h>
 typedef volatile _Atomic unsigned long inferiority_suspension_counter_t;
 #define SUSPEND_INC(counter) ((void)atomic_fetch_add(&counter, 1))
 #define SUSPEND_DEC(counter) (atomic_fetch_sub(&counter, 1) - 1)
 #define SUSPEND_CHECK(counter) (atomic_load(&counter) > 0)
+
 #else
-#warning "atomics not available, inferior suspension will not be threadsafe"
-#error "actually they aren't implemented. whoopsie!"
+
+#  if YR_USE_STDTHREADS
+
+#include <threads.h>
+typedef once_flag yr_once_t;
+#define YR_ONCE_INIT ONCE_FLAG_INIT
+#define yr_once call_once
+typedef mtx_t yr_mtx_t;
+#define yr_mtx_init mtx_init
+#define yr_mtx_init_ok thrd_success
+#define yr_mtx_lock mtx_lock
+#define yr_mtx_unlock mtx_unlock
+
+#  else
+
+typedef pthread_once_t yr_once_t;
+#define YR_ONCE_INIT PTHREAD_ONCE_INIT
+#define yr_once pthread_once
+typedef pthread_mutex_t yr_mtx_t;
+#define yr_mtx_init(mtx) pthread_mutex_init(mtx, NULL)
+#define yr_mtx_init_ok 0
+#define yr_mtx_lock pthread_mutex_lock
+#define yr_mtx_unlock pthread_mutex_unlock
+
+#  endif
+
+typedef unsigned long inferiority_suspension_counter_t;
+static yr_mtx_t suspension_counter_mtx;
+static yr_once_t suspension_counter_mtx_init_once = YR_ONCE_INIT;
+static void init_suspension_mtx(void)
+{
+  YR_RUNTIME_ASSERT(yr_mtx_init(&suspension_counter_mtx) == yr_mtx_init_ok,
+                    "mutex initialization failed");
+}
+static inline void suspend_increment(inferiority_suspension_counter_t *counter)
+{
+  yr_once(&suspension_counter_mtx_init_once, init_suspension_mtx);
+  yr_mtx_lock(&suspension_counter_mtx);
+  ++*counter;
+  yr_mtx_unlock(&suspension_counter_mtx);
+}
+static inline inferiority_suspension_counter_t
+suspend_decrement(inferiority_suspension_counter_t *counter)
+{
+  yr_mtx_lock(&suspension_counter_mtx);
+  inferiority_suspension_counter_t result = --*counter;
+  yr_mtx_unlock(&suspension_counter_mtx);
+  return result;
+}
+static inline bool suspend_check(inferiority_suspension_counter_t *counter)
+{
+  yr_mtx_lock(&suspension_counter_mtx);
+  inferiority_suspension_counter_t snapshot = *counter;
+  yr_mtx_unlock(&suspension_counter_mtx);
+  return snapshot > 0;
+}
+#define SUSPEND_INC(ctr) suspend_increment(&(ctr))
+#define SUSPEND_DEC(ctr) suspend_decrement(&(ctr))
+#define SUSPEND_CHECK(ctr) suspend_check(&(ctr))
 #endif
 
 const struct inferior_handle YR_INFERIOR_HANDLE_NULL = {

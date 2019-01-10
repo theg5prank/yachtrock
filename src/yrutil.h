@@ -74,4 +74,12 @@ extern void *yr_malloc(size_t size);
 extern void *yr_calloc(size_t size, size_t nobj);
 extern void *yr_realloc(void *ptr, size_t size);
 
+#if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
+#define YR_USE_STDATOMIC 1
+#endif
+
+#if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_THREADS__
+#define YR_USE_STDTHREADS 1
+#endif
+
 #endif
