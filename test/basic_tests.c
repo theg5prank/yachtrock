@@ -4,6 +4,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "yrtests.h"
+
 void test_basic_assert_failure(yr_test_case_t testcase)
 {
   YR_ASSERT(1 == 2, "expected one to equal two, but it was: %d (pssst: this is a dummy failure)", 1);
@@ -173,19 +175,13 @@ YR_TESTCASE(test_case_decl_with_name, tc)
   YR_ASSERT(strlen(tc->name) > 0);
 }
 
-int main(void)
+yr_test_suite_t yr_create_basic_suite(void)
 {
-  yr_test_suite_t suite = yr_create_suite_from_functions("basic tests", NULL, YR_NO_CALLBACKS,
-                                                         do_test_failures, do_test_refcon,
-                                                         do_test_basics_setups_teardowns,
-                                                         do_test_basics_suite_from_functions,
-                                                         do_test_skip_basics,
-                                                         test_case_decl_name_only,
-                                                         test_case_decl_with_name);
-  if ( yr_basic_run_suite(suite) ) {
-    fprintf(stderr, "some tests failed!\n");
-    return EXIT_FAILURE;
-  }
-  free(suite);
-  return 0;
+  return yr_create_suite_from_functions("basic tests", NULL, YR_NO_CALLBACKS,
+                                        do_test_failures, do_test_refcon,
+                                        do_test_basics_setups_teardowns,
+                                        do_test_basics_suite_from_functions,
+                                        do_test_skip_basics,
+                                        test_case_decl_name_only,
+                                        test_case_decl_with_name);
 }

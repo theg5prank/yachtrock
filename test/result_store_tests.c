@@ -7,6 +7,14 @@ struct result_store_test_context
 {
   yr_result_store_t store;
 };
+void result_store_suite_setup(yr_test_suite_t suite)
+{
+  suite->refcon = malloc(sizeof(struct result_store_test_context));
+}
+void result_store_suite_teardown(yr_test_suite_t suite)
+{
+  free(suite->refcon);
+}
 void result_store_case_setup(yr_test_case_t testcase)
 {
   ((struct result_store_test_context *)(testcase->suite->refcon))->store =
@@ -263,10 +271,11 @@ static YR_TESTCASE(test_subresult_accessors)
   YR_ASSERT_EQUAL(yr_result_store_get_subresult(subresult, 2), store3);
 }
 
-int main(void)
+yr_test_suite_t yr_create_result_store_suite(void)
 {
-  struct result_store_test_context test_context;
   struct yr_suite_lifecycle_callbacks callbacks = {0};
+  callbacks.setup_suite = result_store_suite_setup;
+  callbacks.teardown_suite = result_store_suite_teardown;
   callbacks.setup_case = result_store_case_setup;
   callbacks.teardown_case = result_store_case_teardown;
   yr_test_suite_t suite = yr_create_suite_from_functions("result store tests", NULL, callbacks,
@@ -280,12 +289,5 @@ int main(void)
                                                          test_hooks,
                                                          test_copy_description,
                                                          test_subresult_accessors);
-  suite->refcon = &test_context;
-  int failures = yr_basic_run_suite(suite);
-  if ( failures ) {
-    fprintf(stderr, "some tests failed!\n");
-    return EXIT_FAILURE;
-  }
-  free(suite);
-  return 0;
+  return suite;
 }

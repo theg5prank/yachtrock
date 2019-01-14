@@ -260,6 +260,7 @@ static const char discoverer_sym[] = YR_XSTR(YACHTROCK_MODULE_DISCOVER_NAME);
 yr_test_suite_collection_t
 yr_test_suite_collection_create_from_dylib_path(const char *path, char **errmsg)
 {
+  YR_RUNTIME_ASSERT(path, "path must not be NULL in %s", __FUNCTION__);
   yr_test_suite_collection_t result = NULL;
   void *handle = dlopen(path, RTLD_LAZY);
   if ( !handle ) {

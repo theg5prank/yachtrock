@@ -5,11 +5,13 @@
 
 #if YACHTROCK_DLOPEN
 #include <dlfcn.h>
-#endif
 
-struct testcase_tests_suite_context {
-  const char *dummy_module_path;
-};
+static const char *get_dummy_module_path(void)
+{
+  return getenv("YRTEST_DUMMY_MODULE");
+}
+
+#endif
 
 void dummy1(yr_test_case_t tc) {}
 void dummy2(yr_test_case_t tc) {}
@@ -223,10 +225,9 @@ static YR_TESTCASE(test_collection_from_collections)
 
 static YR_TESTCASE(test_collection_discovery)
 {
-  struct testcase_tests_suite_context *context = testcase->suite->refcon;
   char *err = NULL;
   yr_test_suite_collection_t collection =
-    yr_test_suite_collection_create_from_dylib_path(context->dummy_module_path,
+    yr_test_suite_collection_create_from_dylib_path(get_dummy_module_path(),
                                                     &err);
   YR_ASSERT(collection != NULL, "didn't get collection, error is %s", err);
   YR_ASSERT_EQUAL(collection->num_suites, 2);
@@ -243,10 +244,13 @@ static YR_TESTCASE(test_collection_discovery)
 
 static YR_TESTCASE(test_collection_discovery_handle)
 {
-  struct testcase_tests_suite_context *context = testcase->suite->refcon;
   char *err = NULL;
-  void *handle = dlopen(context->dummy_module_path, RTLD_LAZY);
+  void *handle = dlopen(get_dummy_module_path(), RTLD_LAZY);
   YR_ASSERT(handle != NULL, "Couldn't load handle: %s", dlerror());
+  if ( handle == NULL ) {
+    // bail or we might look up something from the dylib we're in... which might run everything again!
+    return;
+  }
   yr_test_suite_collection_t collection =
     yr_test_suite_collection_create_from_handle(handle,
                                                 &err);
@@ -279,17 +283,9 @@ static YR_TESTCASE(test_collection_discovery_fail_no_dylib)
 
 static YR_TESTCASE(placeholder_test) {}
 
-int main(int argc, char **argv)
+yr_test_suite_t yr_create_testcase_suite(void)
 {
-#if YACHTROCK_DLOPEN
-  if ( argc < 2 ) {
-    fprintf(stderr, "not passed dummy module name?\n");
-    abort();
-  }
-#endif
-  struct testcase_tests_suite_context context;
-  context.dummy_module_path = argv[1];
-  yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", &context,
+  yr_test_suite_t suite = yr_create_suite_from_functions("testcase tests", NULL,
                                                          YR_NO_CALLBACKS,
                                                          test_create_from_functions,
                                                          test_collection_from_suites_basic,
@@ -302,11 +298,5 @@ int main(int argc, char **argv)
 #endif
                                                          placeholder_test
                                                          );
-  if ( yr_basic_run_suite(suite) ) {
-    fprintf(stderr, "some tests failed!\n");
-    return EXIT_FAILURE;
-  }
-  free(suite);
-  return 0;
-
+  return suite;
 }

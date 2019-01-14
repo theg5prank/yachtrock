@@ -335,7 +335,7 @@ static YR_TESTCASE(test_run_suite_collection_under_store)
   free(collection);
 }
 
-int main(void)
+yr_test_suite_t yr_create_run_under_store_suite(void)
 {
   struct yr_suite_lifecycle_callbacks suite_callbacks = {
     .setup_case = setup_store_and_suite,
@@ -346,10 +346,5 @@ int main(void)
                                                          test_run_under_store_callbacks,
                                                          test_run_under_store_closes_subresults_only,
                                                          test_run_suite_collection_under_store);
-  if ( yr_basic_run_suite(suite) ) {
-    fprintf(stderr, "some tests failed!\n");
-    return EXIT_FAILURE;
-  }
-  free(suite);
-  return 0;
+  return suite;
 }

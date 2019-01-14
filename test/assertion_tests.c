@@ -54,7 +54,7 @@ FAILING_TEST_CASE(test_assert_greater_than_equal_fails,
 
 FAILING_TEST_CASE(test_fail, YR_FAIL, "failing is important sometimes: %s", "you betcha");
 
-int main(void)
+yr_test_suite_t yr_create_assertion_suite(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("assertion tests",
                                                          NULL, YR_NO_CALLBACKS,
@@ -75,10 +75,5 @@ int main(void)
                                                          test_assert_greater_than_equal_greater,
                                                          test_assert_greater_than_equal_fails,
                                                          test_fail);
-  if ( yr_basic_run_suite(suite) ) {
-    fprintf(stderr, "some tests failed!\n");
-    return EXIT_FAILURE;
-  }
-  free(suite);
-  return 0;
+  return suite;
 }
