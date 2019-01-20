@@ -27,6 +27,20 @@
     }                                                                   \
   } while (0)
 
+#define YR_ASSERT_STRINGS_EQUAL(val1, val2, ...) do {                   \
+    if ( strcmp((val1), (val2)) != 0 ) {                                \
+      const char *__assertion_desc = "strcmp("#val1 ", " #val2 ") == 0"; \
+      yr_fail_assertion(__assertion_desc, __FILE__, __LINE__, __FUNCTION__, ""__VA_ARGS__); \
+    }                                                                   \
+  } while (0)
+
+#define YR_ASSERT_STRINGS_NOT_EQUAL(val1, val2, ...) do {               \
+    if ( strcmp((val1), (val2)) == 0 ) {                                \
+      const char *__assertion_desc = "strcmp("#val1 ", " #val2 ") != 0"; \
+      yr_fail_assertion(__assertion_desc, __FILE__, __LINE__, __FUNCTION__, ""__VA_ARGS__); \
+    }                                                                   \
+  } while (0)
+
 #define YR_ASSERT_NOT_EQUAL(val1, val2, ...) do {                       \
     if ( (val1) == (val2) ) {                                           \
       const char *__assertion_desc = #val1 " != " #val2;                \

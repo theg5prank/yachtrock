@@ -83,8 +83,8 @@ void test_getters(yr_test_case_t testcase)
 {
   yr_result_store_t subresult = yr_result_store_open_subresult(GETSTORE(testcase), "subresult");
   YR_ASSERT(yr_result_store_get_parent(subresult) == GETSTORE(testcase));
-  YR_ASSERT(strcmp(yr_result_store_get_name(subresult), "subresult") == 0);
-  YR_ASSERT(strcmp(yr_result_store_get_name(GETSTORE(testcase)), __FUNCTION__) == 0);
+  YR_ASSERT_STRINGS_EQUAL(yr_result_store_get_name(subresult), "subresult");
+  YR_ASSERT_STRINGS_EQUAL(yr_result_store_get_name(GETSTORE(testcase)), __FUNCTION__);
 }
 
 void enumerator_for_test(yr_result_store_t subresult, void *refcon)
@@ -107,7 +107,7 @@ void enumerator_for_test(yr_result_store_t subresult, void *refcon)
     break;
   }
   const char *realname = yr_result_store_get_name(subresult);
-  YR_ASSERT(strcmp(realname, expected_name) == 0, "expected %s to be %s", realname, expected_name);
+  YR_ASSERT_STRINGS_EQUAL(realname, expected_name, "expected %s to be %s", realname, expected_name);
 }
 void test_enumeration(yr_test_case_t testcase)
 {
@@ -139,7 +139,7 @@ void test_store_opened_callback(yr_result_store_t new_store, void *refcon)
 void test_store_closed_callback(yr_result_store_t closed_store, void *refcon)
 {
   if ( yr_result_store_get_parent(closed_store) != NULL ) {
-    YR_ASSERT(strcmp(yr_result_store_get_name(closed_store), "child") == 0);
+    YR_ASSERT_STRINGS_EQUAL(yr_result_store_get_name(closed_store), "child");
     YR_ASSERT(((struct store_hooks_callbacks_refcon *)refcon)->num_closes == 0);
     YR_ASSERT(yr_result_store_get_parent(closed_store) ==
               ((struct store_hooks_callbacks_refcon *)refcon)->root);
@@ -216,7 +216,7 @@ static YR_TESTCASE(test_copy_description)
      "        leaf2 [UNSET]\n"
      "    subresult2 [UNSET]\n"
      "        leaf3 [UNSET]");
-  YR_ASSERT_EQUAL(strcmp(desc, expected1), 0);
+  YR_ASSERT_STRINGS_EQUAL(desc, expected1);
   free(desc);
 
   yr_result_store_close(leaf1);
@@ -229,7 +229,7 @@ static YR_TESTCASE(test_copy_description)
      "        leaf2 [SKIPPED]\n"
      "    subresult2 [UNSET]\n"
      "        leaf3 [UNSET]");
-  YR_ASSERT_EQUAL(strcmp(desc, expected2), 0);
+  YR_ASSERT_STRINGS_EQUAL(desc, expected2);
   free(desc);
 
   yr_result_store_record_result(leaf3, YR_RESULT_FAILED);
@@ -247,7 +247,7 @@ static YR_TESTCASE(test_copy_description)
      "        leaf2 [SKIPPED]\n"
      "    subresult2 [FAILED]\n"
      "        leaf3 [FAILED]");
-  YR_ASSERT_EQUAL(strcmp(desc, expected3), 0);
+  YR_ASSERT_STRINGS_EQUAL(desc, expected3);
   free(desc);
   yr_result_store_destroy(store);
 }

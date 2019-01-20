@@ -34,22 +34,22 @@ YR_TESTCASE(test_create_from_functions)
                                                          NULL, callbacks,
                                                          dummy1, dummy2, dummy3);
 
-  YR_ASSERT_EQUAL(strcmp(suite->name, "the name"), 0);
+  YR_ASSERT_STRINGS_EQUAL(suite->name, "the name");
   YR_ASSERT_EQUAL(suite->num_cases, 3);
   YR_ASSERT_EQUAL(suite->lifecycle.setup_case, dummy_setup_case);
   YR_ASSERT_EQUAL(suite->lifecycle.teardown_case, dummy_teardown_case);
   YR_ASSERT_EQUAL(suite->lifecycle.setup_suite, dummy_setup_suite);
   YR_ASSERT_EQUAL(suite->lifecycle.teardown_suite, dummy_teardown_suite);
 
-  YR_ASSERT_EQUAL(strcmp(suite->cases[0].name, "dummy1"), 0);
+  YR_ASSERT_STRINGS_EQUAL(suite->cases[0].name, "dummy1");
   YR_ASSERT_EQUAL(suite->cases[0].testcase, dummy1);
   YR_ASSERT_EQUAL(suite->cases[0].suite, suite);
 
-  YR_ASSERT_EQUAL(strcmp(suite->cases[1].name, "dummy2"), 0);
+  YR_ASSERT_STRINGS_EQUAL(suite->cases[1].name, "dummy2");
   YR_ASSERT_EQUAL(suite->cases[1].testcase, dummy2);
   YR_ASSERT_EQUAL(suite->cases[1].suite, suite);
 
-  YR_ASSERT_EQUAL(strcmp(suite->cases[2].name, "dummy3"), 0);
+  YR_ASSERT_STRINGS_EQUAL(suite->cases[2].name, "dummy3");
   YR_ASSERT_EQUAL(suite->cases[2].testcase, dummy3);
   YR_ASSERT_EQUAL(suite->cases[2].suite, suite);
 
@@ -61,7 +61,7 @@ static void assert_suites_equal_but_independent(yr_test_suite_t a, yr_test_suite
   YR_ASSERT_NOT_EQUAL(a, b);
 
   YR_ASSERT_NOT_EQUAL(a->name, b->name);
-  YR_ASSERT_EQUAL(strcmp(a->name, b->name), 0);
+  YR_ASSERT_STRINGS_EQUAL(a->name, b->name);
 
   YR_ASSERT_EQUAL(a->refcon, b->refcon);
 
@@ -73,7 +73,7 @@ static void assert_suites_equal_but_independent(yr_test_suite_t a, yr_test_suite
   YR_ASSERT_EQUAL(a->num_cases, b->num_cases);
   for ( size_t i = 0; i < a->num_cases; i++ ) {
     YR_ASSERT_NOT_EQUAL(a->cases[i].name, b->cases[i].name);
-    YR_ASSERT_EQUAL(strcmp(a->cases[i].name, b->cases[i].name), 0);
+    YR_ASSERT_STRINGS_EQUAL(a->cases[i].name, b->cases[i].name);
     YR_ASSERT_EQUAL(a->cases[i].testcase, b->cases[i].testcase);
     YR_ASSERT_EQUAL(a->cases[i].suite, a);
     YR_ASSERT_EQUAL(b->cases[i].suite, b);

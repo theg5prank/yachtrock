@@ -54,6 +54,23 @@ FAILING_TEST_CASE(test_assert_greater_than_equal_fails,
 
 FAILING_TEST_CASE(test_fail, YR_FAIL, "failing is important sometimes: %s", "you betcha");
 
+#define STRING_PASSING_TEST_CASE(name, macro, str1, str2)       \
+  static void name(yr_test_case_t tc)                           \
+  {                                                             \
+    char duplicated1[strlen(str1) + 1];                         \
+    strcpy(duplicated1, str1);                                  \
+    char duplicated2[strlen(str2) + 1];                         \
+    strcpy(duplicated2, str2);                                  \
+    macro(str1, str2);                                          \
+  }
+
+
+STRING_PASSING_TEST_CASE(test_strings_equal_equal, YR_ASSERT_STRINGS_EQUAL, "hello", "hello")
+FAILING_TEST_CASE(test_strings_equal_not_equal, YR_ASSERT_STRINGS_EQUAL, "hello", "there");
+
+STRING_PASSING_TEST_CASE(test_strings_not_equal_not_equal, YR_ASSERT_STRINGS_NOT_EQUAL, "hello", "there");
+FAILING_TEST_CASE(test_strings_not_equal_equal, YR_ASSERT_STRINGS_NOT_EQUAL, "hello", "hello");
+
 yr_test_suite_t yr_create_assertion_suite(void)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("assertion tests",
@@ -74,6 +91,10 @@ yr_test_suite_t yr_create_assertion_suite(void)
                                                          test_assert_greater_than_equal_equal,
                                                          test_assert_greater_than_equal_greater,
                                                          test_assert_greater_than_equal_fails,
-                                                         test_fail);
+                                                         test_fail,
+                                                         test_strings_equal_equal,
+                                                         test_strings_equal_not_equal,
+                                                         test_strings_not_equal_not_equal,
+                                                         test_strings_not_equal_equal);
   return suite;
 }

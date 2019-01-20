@@ -193,7 +193,7 @@ static YR_TESTCASE(test_selector_raw_api)
   YR_ASSERT_EQUAL(copied->vtable.copy_context, sel_start.vtable.copy_context);
   YR_ASSERT_EQUAL(copied->vtable.destroy_context, sel_start.vtable.destroy_context);
   YR_ASSERT_NOT_EQUAL(copied->context, sel_start.context);
-  YR_ASSERT_EQUAL(strcmp(copied->context, sel_start.context), 0);
+  YR_ASSERT_STRINGS_EQUAL(copied->context, sel_start.context);
 
   yr_test_suite_t suite = yr_create_suite_from_functions("boo", NULL, YR_NO_CALLBACKS,
                                                          foobar, bazquux, rutabega);
@@ -267,7 +267,7 @@ static YR_TESTCASE(test_suite_filtering_some_hits)
   yr_selector_destroy(sel1);
   yr_test_suite_t filtered = yr_test_suite_create_filtered(suite, set);
   YR_ASSERT_EQUAL(filtered->num_cases, 1);
-  YR_ASSERT(strcmp(filtered->cases[0].name, suite->cases[1].name) == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->cases[0].name, suite->cases[1].name);
   YR_ASSERT_EQUAL(filtered->cases[0].testcase, suite->cases[1].testcase);
   YR_ASSERT_NOT_EQUAL(filtered->cases[0].name, suite->cases[1].name);
   YR_ASSERT_EQUAL(filtered->refcon, suite->refcon);
@@ -334,23 +334,23 @@ static YR_TESTCASE(test_collection_filtering_some_hits)
 
   YR_ASSERT_EQUAL(filtered->num_suites, 2);
 
-  YR_ASSERT(strcmp(filtered->suites[0]->name, collection->suites[0]->name) == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->suites[0]->name, collection->suites[0]->name);
   YR_ASSERT(lifecycles_equal(filtered->suites[0]->lifecycle, collection->suites[0]->lifecycle));
   YR_ASSERT_EQUAL(filtered->suites[0]->num_cases, 1);
   YR_ASSERT_EQUAL(filtered->suites[0]->cases[0].testcase, bazquux);
-  YR_ASSERT(strcmp(filtered->suites[0]->cases[0].name, "bazquux") == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->suites[0]->cases[0].name, "bazquux");
 
-  YR_ASSERT(strcmp(filtered->suites[1]->name, collection->suites[2]->name) == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->suites[1]->name, collection->suites[2]->name);
   YR_ASSERT(lifecycles_equal(filtered->suites[1]->lifecycle, collection->suites[2]->lifecycle));
   YR_ASSERT_EQUAL(filtered->suites[1]->num_cases, 3);
   YR_ASSERT_EQUAL(filtered->suites[1]->cases[0].testcase, foobar);
-  YR_ASSERT(strcmp(filtered->suites[1]->cases[0].name, collection->suites[2]->cases[0].name) == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->suites[1]->cases[0].name, collection->suites[2]->cases[0].name);
   YR_ASSERT_NOT_EQUAL(filtered->suites[1]->cases[0].name, collection->suites[2]->cases[0].name);
   YR_ASSERT_EQUAL(filtered->suites[1]->cases[1].testcase, foobar);
-  YR_ASSERT(strcmp(filtered->suites[1]->cases[1].name, collection->suites[2]->cases[1].name) == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->suites[1]->cases[1].name, collection->suites[2]->cases[1].name);
   YR_ASSERT_NOT_EQUAL(filtered->suites[1]->cases[1].name, collection->suites[2]->cases[1].name);
   YR_ASSERT_EQUAL(filtered->suites[1]->cases[2].testcase, foobar);
-  YR_ASSERT(strcmp(filtered->suites[1]->cases[2].name, collection->suites[2]->cases[2].name) == 0);
+  YR_ASSERT_STRINGS_EQUAL(filtered->suites[1]->cases[2].name, collection->suites[2]->cases[2].name);
   YR_ASSERT_NOT_EQUAL(filtered->suites[1]->cases[2].name, collection->suites[2]->cases[2].name);
 
   yr_selector_set_destroy(set);
