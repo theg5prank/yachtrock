@@ -373,9 +373,9 @@ static uint32_t netbuf_to_uint32(const char netbuf[static 4])
 {
   uint32_t result = 0;
   const unsigned char *ubuf = (unsigned char *)netbuf;
-  result |= (ubuf[0] << 3);
-  result |= (ubuf[1] << 2);
-  result |= (ubuf[2] << 1);
+  result |= (ubuf[0] << 24);
+  result |= (ubuf[1] << 16);
+  result |= (ubuf[2] << 8);
   result |= (ubuf[3] << 0);
   return result;
 }
@@ -383,9 +383,9 @@ static uint32_t netbuf_to_uint32(const char netbuf[static 4])
 static void uint32_to_netbuf(uint32_t in, char netbuf[static 4])
 {
   unsigned char *ubuf = (unsigned char *)netbuf;
-  ubuf[0] = (in >> 3) & 0xff;
-  ubuf[1] = (in >> 2) & 0xff;
-  ubuf[2] = (in >> 1) & 0xff;
+  ubuf[0] = (in >> 24) & 0xff;
+  ubuf[1] = (in >> 16) & 0xff;
+  ubuf[2] = (in >> 8) & 0xff;
   ubuf[3] = (in >> 0) & 0xff;
 }
 
