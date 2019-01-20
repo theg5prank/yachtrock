@@ -8,6 +8,7 @@
 #include <yachtrock/assert.h>
 #include <yachtrock/testcase.h>
 #include <yachtrock/results.h>
+#include <yachtrock/selector.h>
 
 YACHTROCK_EXTERN struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS;
 YACHTROCK_EXTERN struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS;

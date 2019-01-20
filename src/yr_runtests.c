@@ -15,7 +15,7 @@ const char *progn;
 
 static void print_usage(void)
 {
-  fprintf(stderr, "Usage: %s [-m | -u ] [-n NAME] DYLIB...\n", progn);
+  fprintf(stderr, "Usage: %s [-m | -u ] [-n NAME] [-g GLOB]... DYLIB...\n", progn);
 }
 
 static char **copy_argv(char **input)
@@ -35,6 +35,17 @@ static void free_copied_argv(char **input)
     free(*iter);
   }
   free(input);
+}
+
+static void add_selector(yr_selector_t selector, yr_selector_t **selectors, size_t *num_selectors,
+                         size_t *selectors_capacity)
+{
+  assert(*num_selectors <= *selectors_capacity);
+  if ( *num_selectors == *selectors_capacity ) {
+    *selectors_capacity = *selectors_capacity > 0 ? *selectors_capacity * 2 : 4;
+    *selectors = yr_realloc(*selectors, sizeof(yr_selector_t) * *selectors_capacity);
+  }
+  (*selectors)[(*num_selectors)++] = selector;
 }
 
 static yr_test_suite_collection_t create_collection_from_path(const char *path)
@@ -70,7 +81,13 @@ int main(int argc, char **argv)
   char *name = NULL;
   int ch;
   bool multiprocess = YACHTROCK_MULTIPROCESS;
-  while ( (ch = getopt(argc, argv_copy, "umn:")) != -1 ) {
+
+  yr_selector_t *selectors = NULL;
+  size_t num_selectors = 0;
+  size_t selectors_capacity = 0;
+  yr_selector_set_t selector_set = NULL;
+
+  while ( (ch = getopt(argc, argv_copy, "umn:g:")) != -1 ) {
     switch ( ch ) {
     case 'u':
       multiprocess = false;
@@ -81,11 +98,26 @@ int main(int argc, char **argv)
     case 'n':
       name = optarg;
       break;
+    case 'g':
+      {
+        yr_selector_t selector = yr_selector_create_from_glob(optarg);
+        add_selector(selector, &selectors, &num_selectors, &selectors_capacity);
+        break;
+      }
     case '?':
     default:
       print_usage();
       return EX_USAGE;
     }
+  }
+
+  if ( num_selectors > 0 ) {
+    selector_set = yr_selector_set_create(num_selectors, selectors);
+    for ( size_t i = 0; i < num_selectors; i++ ) {
+      yr_selector_destroy(selectors[i]);
+    }
+    free(selectors);
+    selectors = NULL;
   }
 
   name = name ? name : "tests run from images";
@@ -106,6 +138,7 @@ int main(int argc, char **argv)
 
   yr_test_suite_collection_t final_collection =
     yr_test_suite_collection_create_from_collection_array(num_collections_loaded, collections);
+
   for ( int i = 0; i < num_collections_loaded; i++ ) {
     assert(collections[i]);
     free(collections[i]);
@@ -117,6 +150,19 @@ int main(int argc, char **argv)
 #else
     false;
 #endif
+
+  if ( selector_set ) {
+    yr_test_suite_collection_t temp = final_collection;
+    final_collection = yr_test_suite_collection_create_filtered(temp, selector_set);
+    free(temp);
+    yr_selector_set_destroy(selector_set);
+    selector_set = NULL;
+
+    if ( final_collection == NULL ) {
+      fprintf(stderr, "%s: all tests were filtered out.\n", progn);
+      return EX_DATAERR;
+    }
+  }
 
   struct yr_result_hooks hooks = (inferior ?
                                   (struct yr_result_hooks){0} : YR_BASIC_STDERR_RESULT_HOOKS);
@@ -147,7 +193,7 @@ int main(int argc, char **argv)
 
   yr_result_store_destroy(store);
   free(final_collection);
-
+  /* Note that the result store may be initialized with a name drawn from argv_copy */
   free_copied_argv(argv_copy);
 
   return result == YR_RESULT_PASSED ? EXIT_SUCCESS : EXIT_FAILURE;

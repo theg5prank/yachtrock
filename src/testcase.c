@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdalign.h>
 
+#include "testcase_internal.h"
+
 #if YACHTROCK_DLOPEN
 #include <dlfcn.h>
 #endif
@@ -130,19 +132,33 @@ static size_t test_suite_string_storage_size(yr_test_suite_t suite)
   }
   return necessary;
 }
-static size_t test_suite_total_size(yr_test_suite_t suite)
+static size_t round_up_test_suite_size(size_t size)
 {
   /* include padding at the end of the string storage to allow for arrays of suites
    * that have their own string storage. For now. Until I want to reclaim those 7*n bytes
    */
+  size_t remainder = size % SUITE_ALIGNMENT;
+  size_t padding = SUITE_ALIGNMENT - remainder;
+  return size + padding;
+}
+static size_t test_suite_total_size(yr_test_suite_t suite)
+{
   size_t strictly_necessary = (sizeof(struct yr_test_suite) +
                                sizeof(struct yr_test_case) * suite->num_cases +
                                test_suite_string_storage_size(suite));
-  size_t remainder = strictly_necessary % SUITE_ALIGNMENT;
-  size_t padding = remainder == 0 ? 0 : (strictly_necessary - remainder) + SUITE_ALIGNMENT;
-  return strictly_necessary + padding;
+  return round_up_test_suite_size(strictly_necessary);
 }
-static char *test_suite_string_storage_location(yr_test_suite_t suite)
+size_t test_suite_total_size_deconstructed(const char *suite_name, size_t num_cases, char **case_names)
+{
+  size_t strictly_necessary = (sizeof(struct yr_test_suite) +
+                               sizeof(struct yr_test_case) * num_cases +
+                               strlen(suite_name) + 1);
+  for ( size_t i = 0; i < num_cases; i++ ) {
+    strictly_necessary += strlen(case_names[i]) + 1;
+  }
+  return round_up_test_suite_size(strictly_necessary);
+}
+char *test_suite_string_storage_location(yr_test_suite_t suite)
 {
   return (char *)&(suite->cases[suite->num_cases]);
 }
@@ -185,8 +201,8 @@ yr_test_suite_collection_create_from_suites(size_t num_suites, yr_test_suite_t *
   size_t suite_alignment_padding = SUITE_ALIGNMENT - ( pointer_memory_needed % SUITE_ALIGNMENT );
   pointer_memory_needed += suite_alignment_padding;
   yr_test_suite_collection_t collection = yr_malloc(sizeof(struct yr_test_suite_collection) +
-                                                 pointer_memory_needed +
-                                                 suite_memory_needed);
+                                                    pointer_memory_needed +
+                                                    suite_memory_needed);
   collection->num_suites = num_suites;
 
   void *next_suite_placement = (char *)(&collection->suites[num_suites]) + suite_alignment_padding;
