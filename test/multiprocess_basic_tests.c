@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
 
 #include "multiprocess_tests.h"
 
@@ -266,6 +267,50 @@ static yr_test_suite_collection_t create_test_suspension_suite_collection(void)
   return collection;
 }
 
+static const uint32_t lorge_num_suites = 1000;
+static const uint32_t lorge_num_cases = 1000;
+static void case_f(yr_test_case_t testcase) {}
+static yr_test_suite_collection_t create_lorge_collection(void)
+{
+  yr_test_suite_t *suites = calloc(sizeof(yr_test_suite_t), lorge_num_suites);
+  for ( uint32_t suite_i = 0; suite_i < lorge_num_suites; suite_i++ ) {
+    char _;
+    yr_test_suite_t suite = yr_create_blank_suite(lorge_num_cases);
+    for ( uint32_t case_i = 0; case_i < lorge_num_cases; case_i++ ) {
+      char *case_name_fmt = "suite %ul case %ul";
+      int necessary = snprintf(&_, 0, case_name_fmt, (unsigned long)suite_i, (unsigned long)case_i) + 1;
+      suite->cases[case_i].name = malloc(necessary);
+      suite->cases[case_i].testcase = case_f;
+      /* const cast is valid, allocated from free store */
+      snprintf((char *)suite->cases[case_i].name, necessary, case_name_fmt, (unsigned long)suite_i, (unsigned long)case_i);
+    }
+
+    char *suite_name_fmt = "suite %ul";
+    int necessary = snprintf(&_, 0, suite_name_fmt, (unsigned long)suite_i);
+    suite->name = malloc(necessary);
+    /* const cast is valid, allocated from free store */
+    snprintf((char *)suite->name, necessary, suite_name_fmt, (unsigned long)suite_i);
+    suites[suite_i] = suite;
+  }
+
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(lorge_num_suites,
+                                                                                      suites);
+  for ( uint32_t suite_i = 0; suite_i < lorge_num_suites; suite_i++ ) {
+    yr_test_suite_t suite = suites[suite_i];
+    assert(suite);
+    for ( uint32_t case_i = 0; case_i < lorge_num_cases; case_i++ ) {
+      /* const cast is valid, allocated from free store */
+      free((char *)suite->cases[case_i].name);
+    }
+    /* const cast is valid, allocated from free store */
+    free((char *)suite->name);
+    free(suite);
+  }
+  free(suites);
+
+  return collection;
+}
+
 static const struct {
   const char *name;
   yr_test_suite_collection_t (*collection_creator)(void);
@@ -274,6 +319,7 @@ static const struct {
   { "do_test_aborts", create_setups_teardowns_aborts_suite_collection },
   { "do_test_suspension", create_test_suspension_suite_collection },
   { "intermediate", create_test_suspension_final_suite_collection },
+  { "do_test_big_collections", create_lorge_collection },
 };
 
 static yr_test_suite_collection_t (*find_creator(const char *name))(void)
@@ -410,14 +456,73 @@ yr_test_suite_collection_t yr_multiprocess_test_inferior_create_collection(const
   return find_creator(collname)();
 }
 
+static void store_closed_big_collections(yr_result_store_t store, void *refcon)
+{
+  if ( yr_result_store_count_subresults(store) > 0 && yr_result_store_get_parent(store) != NULL ) {
+    fprintf(stderr, ".");
+  } else if ( yr_result_store_get_parent(store) == NULL ) {
+    fprintf(stderr, "\n");
+  }
+}
+
+static void do_test_big_collections(yr_test_case_t testcase)
+{
+  setenv(env_key, __FUNCTION__, 1);
+  yr_test_suite_collection_t collection = find_creator(__FUNCTION__)();
+  struct yr_result_hooks result_hooks = {
+    .store_closed = store_closed_big_collections,
+  };
+  yr_result_store_t store = yr_result_store_create_with_hooks(__FUNCTION__, result_hooks);
+  char *argv[2];
+  prep_argv(argv);
+  yr_run_suite_collection_under_store_multiprocess(argv[0], argv, environ, collection, store,
+                                                   YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+  yr_result_store_close(store);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_PASSED);
+  YR_ASSERT(all_passes(store));
+  yr_result_store_destroy(store);
+  free(collection);
+}
+
 yr_test_suite_t yr_create_multiprocess_suite(void)
 {
   struct yr_suite_lifecycle_callbacks callbacks = {0};
   callbacks.setup_suite = suite_setup_suspend_inferiority;
   callbacks.teardown_suite = suite_teardown_reset_inferiority;
-  yr_test_suite_t suite = yr_create_suite_from_functions("multiprocess basic tests", NULL, callbacks,
-                                                         do_test_basics_setups_teardowns,
-                                                         do_test_aborts,
-                                                         do_test_suspension);
+
+  struct multiprocess_testcase {
+    void (*testcase)(yr_test_case_t testcase);
+    char *name;
+  };
+
+#define ENTRY(f) { .testcase = f, .name = #f }
+
+  struct multiprocess_testcase always_cases[] = {
+    ENTRY(do_test_basics_setups_teardowns),
+    ENTRY(do_test_aborts),
+    ENTRY(do_test_suspension),
+  };
+
+  size_t num_always_cases = sizeof(always_cases) / sizeof(always_cases[0]);
+  size_t num_cases = num_always_cases;
+
+  if ( getenv("YR_LORGE") ) {
+    num_cases++;
+  }
+
+  yr_test_suite_t suite = yr_create_blank_suite(num_cases);
+  for ( size_t i = 0; i < num_always_cases; i++ ) {
+    suite->cases[i].name = always_cases[i].name;
+    suite->cases[i].testcase = always_cases[i].testcase;
+  }
+
+  if ( getenv("YR_LORGE") ) {
+    suite->cases[num_always_cases].name = "do_test_big_collections";
+    suite->cases[num_always_cases].testcase = do_test_big_collections;
+  }
+
+  suite->name = "multiprocess basic tests";
+  suite->lifecycle = callbacks;
+
   return suite;
 }
