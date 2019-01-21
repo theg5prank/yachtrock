@@ -373,20 +373,20 @@ static uint32_t netbuf_to_uint32(const char netbuf[static 4])
 {
   uint32_t result = 0;
   const unsigned char *ubuf = (unsigned char *)netbuf;
-  result |= (ubuf[0] << 24);
-  result |= (ubuf[1] << 16);
-  result |= (ubuf[2] << 8);
-  result |= (ubuf[3] << 0);
+  result |= (ubuf[0] << 3 * CHAR_BIT);
+  result |= (ubuf[1] << 2 * CHAR_BIT);
+  result |= (ubuf[2] << 1 * CHAR_BIT);
+  result |= (ubuf[3] << 0 * CHAR_BIT);
   return result;
 }
 
 static void uint32_to_netbuf(uint32_t in, char netbuf[static 4])
 {
   unsigned char *ubuf = (unsigned char *)netbuf;
-  ubuf[0] = (in >> 24) & 0xff;
-  ubuf[1] = (in >> 16) & 0xff;
-  ubuf[2] = (in >> 8) & 0xff;
-  ubuf[3] = (in >> 0) & 0xff;
+  ubuf[0] = (in >> 3 * CHAR_BIT) & 0xff;
+  ubuf[1] = (in >> 2 * CHAR_BIT) & 0xff;
+  ubuf[2] = (in >> 1 * CHAR_BIT) & 0xff;
+  ubuf[3] = (in >> 0 * CHAR_BIT) & 0xff;
 }
 
 bool yr_recv_uint32(int sock, uint32_t out[static 1], struct timeval *timeout)
