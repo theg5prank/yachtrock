@@ -8,6 +8,9 @@
 #include <dlfcn.h>
 
 #include "yrutil.h"
+#include "version_internal.h"
+
+char *yr_runtests_what = "@(#) PROGRAM:yr_runtests  PROJECT:libyachtrock " YR_VERSION_LITERAL;
 
 extern char **environ;
 
