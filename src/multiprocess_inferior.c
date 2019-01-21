@@ -25,6 +25,9 @@ static bool send_collection_desc_message(int sock, yr_test_suite_collection_t co
   message->message_code = MESSAGE_PROVIDE_COLLECTION_DESC;
   message->payload_length = collection_desc_size;
   bool ok = yr_send_message(sock, message, NULL);
+  if ( !ok ) {
+    yr_warnx("failed to send collection desc message");
+  }
   free(message);
   return ok;
 }
@@ -162,6 +165,9 @@ static bool handle_invoke_case(int sock, struct yr_message *invoke_case_message,
                                                                             payload_buf,
                                                                             payload_len);
   bool responded_ok = yr_send_message(sock, case_finished_message, NULL);
+  if ( !responded_ok ) {
+    yr_warnx("unable to send case finished message");
+  }
   free(case_finished_message);
 
   return responded_ok;
@@ -178,7 +184,6 @@ static bool inferior_handle_message(int sock, struct yr_message *command_message
     break;
   case MESSAGE_TERMINATE:
     finalize_state(state);
-    yr_warnx("inferior terminating cleanly per superior instruction");
     exit(0);
   case MESSAGE_INVOKE_CASE:
     return handle_invoke_case(sock, command_message, collection, runtime_callbacks, state);

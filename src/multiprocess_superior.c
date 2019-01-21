@@ -44,6 +44,20 @@ static void drain_inferior_best_effort(struct inferior_handle *inferior_info)
   }
   if ( result < 0 ) {
     yr_warn("waitpid failed");
+  } else {
+    if ( WIFEXITED(stat_loc) ) {
+      if ( WEXITSTATUS(stat_loc) == 0 ) {
+        yr_warnx("cleanly tore down inferior %d", inferior_info->pid);
+      } else {
+        yr_warnx("inferior %d exited uncleanly (%d)", inferior_info->pid, WEXITSTATUS(stat_loc));
+      }
+    } else if ( WIFSIGNALED(stat_loc) ) {
+      yr_warnx("inferior %d killed (signal %d)", inferior_info->pid, WTERMSIG(stat_loc));
+    } else if ( WIFSTOPPED(stat_loc) ) {
+      yr_warnx("inferior %d stopped (signal %d)?", inferior_info->pid, WSTOPSIG(stat_loc));
+    } else {
+      yr_warnx("inferior %d returned unknown status %x", inferior_info->pid, stat_loc);
+    }
   }
   close(inferior_info->socket);
   *inferior_info = YR_INFERIOR_HANDLE_NULL;
@@ -51,12 +65,27 @@ static void drain_inferior_best_effort(struct inferior_handle *inferior_info)
 
 static void forcibly_terminate_inferior(struct inferior_handle *inferior)
 {
+  yr_warnx("forcibly terminating inferior %d", inferior->pid);
   kill(inferior->pid, SIGKILL);
   int stat_loc = 0;
   int result;
   EINTR_RETRY(result = waitpid(inferior->pid, &stat_loc, 0));
   if ( result < 0 ) {
     yr_warn("waitpid failed");
+  } else {
+    if ( WIFEXITED(stat_loc) ) {
+      yr_warnx("inferior %d exited with exit code %d", inferior->pid, WEXITSTATUS(stat_loc));
+    } else if ( WIFSIGNALED(stat_loc) ) {
+      if ( WTERMSIG(stat_loc) == SIGKILL ) {
+        yr_warnx("successfully killed inferior %d", inferior->pid);
+      } else {
+        yr_warnx("inferior %d killed (signal %d)", inferior->pid, WTERMSIG(stat_loc));
+      }
+    } else if ( WIFSTOPPED(stat_loc) ) {
+      yr_warnx("inferior %d stopped (signal %d)?", inferior->pid, WSTOPSIG(stat_loc));
+    } else {
+      yr_warnx("inferior %d returned unknown status %x", inferior->pid, stat_loc);
+    }
   }
   close(inferior->socket);
   *inferior = YR_INFERIOR_HANDLE_NULL;
@@ -83,10 +112,11 @@ static bool check_collection(struct inferior_handle inferior,
   size_t filled_out_size = 0;
   char *collection_desc = NULL;
   struct yr_message *desc_message = NULL;
-  
+
   bool ok = yr_send_message(inferior.socket, &request_collection_message, NULL);
 
   if ( !ok ) {
+    yr_warnx("failed to send request collection message");
     goto out;
   }
 
@@ -98,13 +128,24 @@ static bool check_collection(struct inferior_handle inferior,
 
   ok = ok && yr_recv_message(inferior.socket, &desc_message, NULL);
   if ( !ok ) {
+    yr_warnx("failed to receive collection desc message");
     assert(!desc_message);
     goto out;
   }
   assert(desc_message);
-  if ( desc_message->message_code != MESSAGE_PROVIDE_COLLECTION_DESC ||
-       desc_message->payload_length != collection_len ||
-       memcmp(desc_message->payload, collection_desc, collection_len) != 0 ) {
+  if ( desc_message->message_code != MESSAGE_PROVIDE_COLLECTION_DESC ) {
+    yr_warnx("bogus message code provided (%x, expected %x)", desc_message->message_code,
+             MESSAGE_PROVIDE_COLLECTION_DESC);
+    ok = false;
+    goto out;
+  } else if ( desc_message->payload_length != collection_len ) {
+    yr_warnx("bogus collection desc payload length (%lu, expected %lu)",
+             (unsigned long)desc_message->payload_length,
+             (unsigned long)collection_len);
+    ok = false;
+    goto out;
+  } else if ( memcmp(desc_message->payload, collection_desc, collection_len) != 0 ) {
+    yr_warnx("collection desc content differed");
     ok = false;
     goto out;
   }
@@ -133,6 +174,7 @@ static bool spawn_and_check_collection(char *path, char **argv, char **environ,
 
   if ( ok ) {
     *inferior = local_inferior;
+    yr_warnx("spawned inferior %d", inferior->pid);
   }
 
   return ok;
@@ -259,6 +301,7 @@ static bool run_collection(char *path, char **argv, char **environ,
       if ( sent_ok ) {
         drain_inferior_best_effort(&inferior);
       } else {
+        yr_warnx("failed to send termination message to inferior");
         forcibly_terminate_inferior(&inferior);
       }
       assert(yr_inferior_handle_is_null(inferior));
