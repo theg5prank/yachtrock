@@ -136,7 +136,7 @@ void do_test_failures(yr_test_case_t tc)
   suite->refcon = NULL;
   suite->cases[0].name = "test_basic_assert_failure";
   suite->cases[0].testcase = test_basic_assert_failure;
-  YR_ASSERT(yr_basic_run_suite(suite) == 1, "test should have failed!");
+  YR_ASSERT_FALSE(yr_basic_run_suite(suite), "test should have failed!");
   free(suite);
 }
 
@@ -148,7 +148,7 @@ void do_test_refcon(yr_test_case_t tc)
   suite->refcon = &two;
   suite->cases[0].name = "test_basic_assert_passes_refcon";
   suite->cases[0].testcase = test_basic_assert_passes_refcon;
-  YR_ASSERT(yr_basic_run_suite(suite) == 0, "test should have passed!");
+  YR_ASSERT(yr_basic_run_suite(suite), "test should have passed!");
   free(suite);
 }
 
@@ -161,7 +161,7 @@ void do_test_skip_basics(yr_test_case_t tc)
 {
   yr_test_suite_t suite = yr_create_suite_from_functions("skip basics subtest", NULL, YR_NO_CALLBACKS,
                                                          test_skip_dummy);
-  YR_ASSERT(yr_basic_run_suite(suite) == 0);
+  YR_ASSERT(yr_basic_run_suite(suite));
   free(suite);
 }
 

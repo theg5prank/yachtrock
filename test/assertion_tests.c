@@ -18,9 +18,9 @@
     yr_test_suite_t suite = yr_create_suite_from_functions(#name " (intentionally failing suite)", \
                                                            NULL, YR_NO_CALLBACKS, \
                                                            __failing_test__ ## name); \
-    int result = yr_basic_run_suite(suite);                             \
+    bool ok = yr_basic_run_suite(suite);                                \
     free(suite);                                                        \
-    YR_ASSERT(result == 1, "test should have failed!");                 \
+    YR_ASSERT_FALSE(ok, "test should have failed!");                    \
   }
 
 PASSING_TEST_CASE(test_assert_false, YR_ASSERT_FALSE, 1 == 2, "should not be equal");

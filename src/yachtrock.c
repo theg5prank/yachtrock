@@ -155,7 +155,7 @@ struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS = {
   .context = NULL
 };
 
-int yr_basic_run_suite(yr_test_suite_t suite)
+bool yr_basic_run_suite(yr_test_suite_t suite)
 {
   return yr_run_suite_with_result_hooks(suite, YR_BASIC_STDERR_RESULT_HOOKS,
                                         YR_BASIC_STDERR_RUNTIME_CALLBACKS);
@@ -195,10 +195,11 @@ typedef struct opened_testsuite *(*testsuite_opener)(yr_test_suite_t suite,
                                                      struct yr_runtime_callbacks runtime_callbacks,
                                                      void *refcon);
 
-static int _yr_run_suite_with_result_hooks_with_testsuite_opener(yr_test_suite_t suite,
-                                                                 struct yr_runtime_callbacks provided_runtime_callbacks,
-                                                                 void *opener_refcon,
-                                                                 testsuite_opener opener)
+static bool
+_yr_run_suite_with_result_hooks_with_testsuite_opener(yr_test_suite_t suite,
+                                                      struct yr_runtime_callbacks provided_runtime_callbacks,
+                                                      void *opener_refcon,
+                                                      testsuite_opener opener)
 {
   struct yr_runtime_callbacks runtime_callbacks = {0};
   struct run_suite_with_result_hooks_runtime_context runtime_context;
@@ -214,7 +215,7 @@ static int _yr_run_suite_with_result_hooks_with_testsuite_opener(yr_test_suite_t
   close_opened_suite(opened);
   bool success = yr_result_store_get_result(opened->store) == YR_RESULT_PASSED;
   destroy_opened_suite(opened);
-  return !success;
+  return success;
 }
 
 struct yr_run_suite_with_result_hooks_opener_context
@@ -229,8 +230,8 @@ _yr_run_suite_with_result_hooks_opener(yr_test_suite_t suite,
   struct yr_run_suite_with_result_hooks_opener_context *context = refcon;
   return open_suite(suite, runtime_callbacks, context->hooks);
 }
-int yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
-                                   struct yr_runtime_callbacks provided_runtime_callbacks)
+bool yr_run_suite_with_result_hooks(yr_test_suite_t suite, struct yr_result_hooks hooks,
+                                    struct yr_runtime_callbacks provided_runtime_callbacks)
 {
   struct yr_run_suite_with_result_hooks_opener_context opener_context;
   opener_context.hooks = hooks;
