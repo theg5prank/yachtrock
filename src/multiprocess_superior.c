@@ -47,7 +47,7 @@ static void drain_inferior_best_effort(struct inferior_handle *inferior_info)
   } else {
     if ( WIFEXITED(stat_loc) ) {
       if ( WEXITSTATUS(stat_loc) == 0 ) {
-        yr_warnx("cleanly tore down inferior %d", inferior_info->pid);
+        // say nothing
       } else {
         yr_warnx("inferior %d exited uncleanly (%d)", inferior_info->pid, WEXITSTATUS(stat_loc));
       }
@@ -174,7 +174,6 @@ static bool spawn_and_check_collection(char *path, char **argv, char **environ,
 
   if ( ok ) {
     *inferior = local_inferior;
-    yr_warnx("spawned inferior %d", inferior->pid);
   }
 
   return ok;
