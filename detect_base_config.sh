@@ -38,7 +38,7 @@ fi
 
 make -s -f - $command <<EOF
 DIR=$dir/
-CFLAGS += -D_POSIX_C_SOURCE=200809L
+CFLAGS += -D_POSIX_C_SOURCE=200809L -std=c11
 $COMPILER_OVERRIDE_SNIPPET
 print_platform_config: \$(DIR)detect_base_config
 	\$(DIR)detect_base_config
