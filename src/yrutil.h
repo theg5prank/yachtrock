@@ -75,8 +75,15 @@ extern void *yr_calloc(size_t size, size_t nobj);
 extern void *yr_realloc(void *ptr, size_t size);
 
 #if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
+/* gcc 4.8 doesn't define __STDC_NO_ATOMICS__ but doesn't have stdatomic.h
+ * see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58016
+ */
+#if __GNUC__ == 4 && __GNUC_MINOR__ <= 8
+/* don't use stdatomics for gcc < 4.8, no matter what other macros say */
+#else
 #define YR_USE_STDATOMIC 1
-#endif
+#endif // __GNUC__ == 4 && __GNUC_MINOR__ <= 8
+#endif // (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
 
 #if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_THREADS__
 #define YR_USE_STDTHREADS 1
