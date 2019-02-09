@@ -1,6 +1,6 @@
 language: c
 
-script: make && make test
+script: make && YR_LORGE=1 make test
 
 compiler:
   - clang
