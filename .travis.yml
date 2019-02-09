@@ -5,3 +5,12 @@ script: make && make test
 compiler:
   - clang
   - gcc
+
+os:
+  - osx
+  - linux
+
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
