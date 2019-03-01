@@ -12,7 +12,7 @@ typedef enum yr_result {
   YR_RESULT_SKIPPED
 } yr_result_t;
 
-YACHTROCK_EXTERN yr_result_t yr_merge_result(yr_result_t old, yr_result_t new);
+YACHTROCK_EXTERN yr_result_t yr_merge_result(yr_result_t old_result, yr_result_t new_result);
 
 typedef struct yr_result_store yr_result_store_s;
 typedef yr_result_store_s *yr_result_store_t;

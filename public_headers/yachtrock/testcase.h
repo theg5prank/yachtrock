@@ -96,12 +96,19 @@ typedef yr_test_suite_collection_t
 YACHTROCK_EXTERN char *
 _yr_create_version_mismatch_error(unsigned discover_version, unsigned yr_version);
 
+#ifdef __cplusplus
+#define YACHTROCK_DISCOVERER_EXTERN extern "C"
+#else
+#define YACHTROCK_DISCOVERER_EXTERN extern
+#endif
+
 #define YACHTROCK_DEFINE_TEST_SUITE_COLLECTION_DISCOVERER()             \
   static yr_test_suite_collection_t                                     \
   YACHTROCK_MODULE_DISCOVER_NAME ## __impl(unsigned discover_version,   \
                                            char **errmsg);              \
-  extern yr_test_suite_collection_t YACHTROCK_MODULE_DISCOVER_NAME(unsigned discover_version, \
-                                                                   char **errmsg) \
+  YACHTROCK_DISCOVERER_EXTERN                                           \
+  yr_test_suite_collection_t YACHTROCK_MODULE_DISCOVER_NAME(unsigned discover_version, \
+                                                            char **errmsg) \
   {                                                                     \
     if ( discover_version > YACHTROCK_DISCOVER_VERSION ) {              \
       if ( errmsg ) {                                                   \
