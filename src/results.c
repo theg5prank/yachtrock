@@ -78,9 +78,7 @@ static void yr_result_store_init(const char *name, yr_result_store_t store)
     name = "(unnamed)";
   }
   store->open = true;
-  char *name_cpy = yr_malloc(strlen(name) + 1);
-  strcpy(name_cpy, name);
-  store->name = name_cpy;
+  store->name = yr_strdup(name);
   store->result = YR_RESULT_UNSET;
   store->subresult_count = 0;
   store->subresult_size = 0;
