@@ -84,16 +84,22 @@ yr_selector_t yr_selector_create_from_glob(const char *sel_specifier)
   char specifier_copy[strlen(sel_specifier) + 1];
   strcpy(specifier_copy, sel_specifier);
   char *suite=NULL, *testcase=NULL;
+  bool escaping = false;
   for ( size_t i = 0; specifier_copy[i]; i++ ) {
-    if ( specifier_copy[i] == '\\' && specifier_copy[i+1] == ':' ) {
-      // skip the slash; subsequently skip the escaped ':'
-      i++;
+    bool skip = escaping;
+    escaping = false;
+    if ( skip ) {
+      // skip the escaped character
       continue;
-    } else if ( specifier_copy[i] == ':' ) {
+    }
+
+    if ( specifier_copy[i] == ':' ) {
       specifier_copy[i] = '\0';
       suite = specifier_copy;
       testcase = specifier_copy + i + 1;
       break;
+    } else if ( specifier_copy[i] == '\\' ) {
+      escaping = true;
     }
   }
   /* At this point if both glob pointers are still NULL, we did not find an unescaped ':'; set

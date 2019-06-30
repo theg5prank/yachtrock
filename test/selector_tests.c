@@ -373,6 +373,21 @@ static YR_TESTCASE(test_collection_filtering_no_hits)
   free(collection);
 }
 
+static YR_TESTCASE(test_glob_selector_escaping)
+{
+  yr_selector_t sel1 = yr_selector_create_from_glob("\\::foobar");
+  yr_test_suite_t suite = create_suite_named(":");
+  YR_ASSERT(yr_selector_match_testcase(sel1, &suite->cases[0]));
+  yr_selector_destroy(sel1);
+  free(suite);
+
+  yr_selector_t sel2 = yr_selector_create_from_glob("\\\\:foobar");
+  yr_test_suite_t suite2 = create_suite_named("\\");
+  YR_ASSERT(yr_selector_match_testcase(sel2, &suite2->cases[0]));
+  yr_selector_destroy(sel2);
+  free(suite2);
+}
+
 yr_test_suite_t yr_create_selector_suite(void)
 {
   return yr_create_suite_from_functions("selector tests", NULL, YR_NO_CALLBACKS,
@@ -387,5 +402,6 @@ yr_test_suite_t yr_create_selector_suite(void)
                                         test_suite_filtering_some_hits,
                                         test_suite_filtering_no_hits,
                                         test_collection_filtering_some_hits,
-                                        test_collection_filtering_no_hits);
+                                        test_collection_filtering_no_hits,
+                                        test_glob_selector_escaping);
 }
