@@ -261,13 +261,14 @@ yr_test_suite_collection_create_from_collection_array(size_t num_collections,
 
 #if YACHTROCK_DLOPEN
 
-char *_yr_create_version_mismatch_error(unsigned discover_version, unsigned yr_version)
+char *_yr_create_version_mismatch_error(unsigned discover_version,
+                                        unsigned yr_discover_version)
 {
   char _;
   static const char *fmt = "Discover version %d is greater than supported version %d";
-  int required = snprintf(&_, 0, fmt, discover_version, yr_version) + 1;
+  int required = snprintf(&_, 0, fmt, discover_version, yr_discover_version) + 1;
   char *alloc_msg = yr_malloc(required);
-  snprintf(alloc_msg, required, fmt, discover_version, yr_version);
+  snprintf(alloc_msg, required, fmt, discover_version, yr_discover_version);
   return alloc_msg;
 }
 

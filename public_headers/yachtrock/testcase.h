@@ -94,7 +94,8 @@ typedef yr_test_suite_collection_t
 (*yr_module_discoverer_t)(unsigned discover_version, char **errmsg);
 
 YACHTROCK_EXTERN char *
-_yr_create_version_mismatch_error(unsigned discover_version, unsigned yr_version);
+_yr_create_version_mismatch_error(unsigned discover_version,
+                                  unsigned yr_discover_version);
 
 #ifdef __cplusplus
 #define YACHTROCK_DISCOVERER_EXTERN extern "C"

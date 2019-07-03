@@ -143,13 +143,13 @@ static void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon
           yr_result_store_get_name(store), output);
 }
 
-struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS = {
+const struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS = {
   .note_assertion_failed = basic_run_suite_note_assertion_failed,
   .note_skipped = basic_run_suite_note_skipped,
   .refcon = NULL
 };
 
-struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS = {
+const struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS = {
   .store_opened = yr_basic_store_opened_callback,
   .store_closed = yr_basic_store_closed_callback,
   .context = NULL

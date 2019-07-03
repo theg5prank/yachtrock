@@ -3,10 +3,10 @@
 
 #include <yachtrock/base.h>
 
-YACHTROCK_EXTERN unsigned yr_major;
-YACHTROCK_EXTERN unsigned yr_minor;
-YACHTROCK_EXTERN unsigned yr_patch;
+YACHTROCK_EXTERN const unsigned yr_major;
+YACHTROCK_EXTERN const unsigned yr_minor;
+YACHTROCK_EXTERN const unsigned yr_patch;
 
-YACHTROCK_EXTERN char *yr_version;
+YACHTROCK_EXTERN const char *yr_version;
 
 #endif
