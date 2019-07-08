@@ -1,5 +1,3 @@
-C++ = c++
-
 INSTALLER:=./install_wrapper.sh
 
 ifeq ($(shell uname),SunOS)
