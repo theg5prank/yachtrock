@@ -1,3 +1,5 @@
+# -*- mode: makefile-gmake -*-
+
 TESTS += test_libyachtrock
 
 LIBYACHTROCK_TESTSRC := selftests_collection.c basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c run_under_store_tests.c selector_tests.c

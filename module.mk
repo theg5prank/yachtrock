@@ -1,3 +1,5 @@
+# -*- mode: makefile-gmake -*-
+
 LIBYACHTROCK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
 define newline

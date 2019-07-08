@@ -1,3 +1,5 @@
+# -*- mode: makefile-gmake -*-
+
 INSTALLER:=./install_wrapper.sh
 
 ifeq ($(shell uname),SunOS)
