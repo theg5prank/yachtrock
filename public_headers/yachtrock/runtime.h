@@ -10,7 +10,13 @@ typedef void (*yr_assertion_failure_callback)(const char *assertion, const char 
 typedef void (*yr_test_skipped_callback)(const char *file, size_t line, const char *funname,
                                          const char *reason, va_list ap, void *refcon);
 
-// callbacks
+/**
+ * Runtime callbacks.
+ *
+ * refcon: Arbitrary pointer passed to the callbacks.
+ * note_assertion_failed: called when an assertion fails.
+ * note_skipped: called when a test is skipped.
+ */
 struct yr_runtime_callbacks
 {
   void *refcon;
@@ -18,14 +24,29 @@ struct yr_runtime_callbacks
   yr_test_skipped_callback note_skipped;
 };
 
+/**
+ * Set the runtime callbacks and return the previously set ones.
+ *
+ * Callbacks must be set before an assertion is failed or a test is skipped. Yachtrock functions
+ * that invoke test cases do this; it's only necessary to call this function if you are implementing
+ * your own test running routines.
+ */
 YACHTROCK_EXTERN struct yr_runtime_callbacks yr_set_runtime_callbacks(struct yr_runtime_callbacks callbacks);
 
-
+/**
+ * Note that an assertion has failed, invoking the runtime callback.
+ */
 YACHTROCK_EXTERN void yr_fail_assertion(const char *assertion, const char *file, size_t line,
                                         const char *funname, const char *s, ...);
+/**
+ * Note that a test has been marked as skipped, invoking the runtime callback.
+ */
 YACHTROCK_EXTERN void yr_skip_test(const char *file, size_t line, const char *funname,
                                    const char *reason, ...);
 
+/**
+ * Helper macros.
+ */
 #define YR_RECORD_SKIP(reason, ...) do {                                \
     yr_skip_test(__FILE__, __LINE__, __FUNCTION__, reason, ##__VA_ARGS__); \
   } while (0)

@@ -10,17 +10,34 @@
 #include <yachtrock/results.h>
 #include <yachtrock/selector.h>
 
+/**
+ * Runtime callbacks and result hooks that print status to stderr.
+ */
 YACHTROCK_EXTERN const struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS;
 YACHTROCK_EXTERN const struct yr_result_hooks YR_BASIC_STDERR_RESULT_HOOKS;
 
+/**
+ * Run a suite and print status and progress information to stderr. Returns true if all tests
+ * passed.
+ */
 YACHTROCK_EXTERN bool yr_basic_run_suite(yr_test_suite_t suite);
+
+/**
+ * Run a suite with specified result hooks and runtime callbacks. Returns true if all tests passed.
+ */
 YACHTROCK_EXTERN bool yr_run_suite_with_result_hooks(yr_test_suite_t suite,
                                                      struct yr_result_hooks hooks,
                                                      struct yr_runtime_callbacks runtime_callbacks);
 
+/**
+ * Run a suite with runtime callbacks, recording results in the specified store.
+ */
 YACHTROCK_EXTERN void yr_run_suite_under_store(yr_test_suite_t suite,
                                                yr_result_store_t store,
                                                struct yr_runtime_callbacks runtime_callbacks);
+/**
+ * Run a suite collection with runtime callbacks, recording results in the specified store.
+ */
 YACHTROCK_EXTERN void yr_run_suite_collection_under_store(yr_test_suite_collection_t collection,
                                                           yr_result_store_t store,
                                                           struct yr_runtime_callbacks runtime_callbacks);

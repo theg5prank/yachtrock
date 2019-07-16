@@ -115,9 +115,15 @@ yr_selector_t yr_selector_create_from_glob(const char *sel_specifier)
     testcase = NULL;
   }
   struct parsed_glob_specifier *parsed = create_parsed_glob_specifier(suite, testcase);
+  yr_selector_t result = yr_selector_create(testname_glob_selector_vtable, parsed);
+  return result;
+}
+
+yr_selector_t yr_selector_create(struct yr_selector_vtable vtable, void *context)
+{
   yr_selector_t result = yr_malloc(sizeof(struct yr_selector));
-  result->vtable = testname_glob_selector_vtable;
-  result->context = parsed;
+  result->vtable = vtable;
+  result->context = context;
   return result;
 }
 
