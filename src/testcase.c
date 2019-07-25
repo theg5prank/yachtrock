@@ -300,7 +300,7 @@ yr_test_suite_collection_t
 yr_test_suite_collection_create_from_handle(void *handle, char **errmsg)
 {
   yr_test_suite_collection_t result = NULL;
-  yr_module_discoverer_t discoverer = dlsym(handle, discoverer_sym);
+  yr_module_discoverer_t discoverer = (yr_module_discoverer_t)dlsym(handle, discoverer_sym);
   if ( !discoverer ) {
     if ( errmsg ) {
       *errmsg = yr_strdup(dlerror());

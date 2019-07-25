@@ -18,7 +18,7 @@ static void beartrap_note_test_skipped(const char *file, size_t line, const char
   YR_RUNTIME_ASSERT(false, "test skipped handler: callbacks not configured");
 }
 
-struct yr_runtime_callbacks current_callbacks = {
+static struct yr_runtime_callbacks current_callbacks = {
   .refcon = NULL,
   .note_assertion_failed = beartrap_note_assertion_failed,
   .note_skipped = beartrap_note_test_skipped,

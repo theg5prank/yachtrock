@@ -10,11 +10,13 @@
 #include "yrutil.h"
 #include "version_internal.h"
 
-char *yr_runtests_what = "@(#) PROGRAM:yr_runtests  PROJECT:libyachtrock " YR_VERSION_LITERAL;
+extern const char *yr_runtests_what;
+const char *yr_runtests_what =
+  "@(#) PROGRAM:yr_runtests  PROJECT:libyachtrock " YR_VERSION_LITERAL;
 
 extern char **environ;
 
-const char *progn;
+static const char *progn;
 
 static void print_usage(void)
 {
