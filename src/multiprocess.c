@@ -22,6 +22,14 @@
 #include <assert.h>
 #include <unistd.h>
 
+#if (__APPLE__ || BSD) || defined(SO_NOSIGPIPE)
+#define USE_SO_NOSIGPIPE 1
+#elif __linux__ || defined(MSG_NOSIGNAL)
+#define USE_MSG_NOSIGNAL 1
+#else
+#error don't know how to avoid SIGPIPE on this platform!
+#endif
+
 #include "yrutil.h"
 #include "multiprocess.h"
 #include "multiprocess_inferior.h"
@@ -198,7 +206,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   }
 
   for ( int i = 0; i < 2; i++ ) {
-#if __APPLE__ || BSD
+#if USE_SO_NOSIGPIPE
     int on = 1;
     if ( setsockopt(sockets[i], SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on)) ) {
       yr_warn("setsockopt failed for SO_NOSIGPIPE");
@@ -352,7 +360,7 @@ bool yr_send_length(int sock, const void *buf, size_t len, struct timeval *timeo
     }
     assert(FD_ISSET(sock, &set));
     int flags = 0;
-#if !__APPLE__ && !defined(BSD)
+#if USE_MSG_NOSIGNAL
     flags |= MSG_NOSIGNAL;
 #endif
     ssize_t send_iter;
