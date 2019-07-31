@@ -313,7 +313,8 @@ bool yr_recv_length(int sock, void *buf, size_t len, struct timeval *timeout, in
     fd_set set;
     FD_ZERO(&set);
     FD_SET(sock, &set);
-    int sel_result = select(sock + 1, &set, NULL, NULL, timeout);
+    int sel_result = 0;
+    EINTR_RETRY(sel_result = select(sock + 1, &set, NULL, NULL, timeout));
     if ( sel_result < 0 ) {
       yr_warn("select failed");
       return false;
