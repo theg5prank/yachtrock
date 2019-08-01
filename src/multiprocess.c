@@ -247,7 +247,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   int error = posix_spawn_file_actions_init(&file_actions);
   if ( error != 0 ) {
     yr_warnc(error, "posix_spawn_file_actions_init failed");
-    goto out;
+    goto out_pre_file_actions;
   }
   error = posix_spawn_file_actions_addclose(&file_actions, sockets[0]);
   if ( error != 0 ) {
@@ -275,11 +275,8 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   }
 
  out:
-  if ( result == 0 && out_result ) {
-    out_result->pid = pid;
-    out_result->socket = sockets[0];
-  }
   posix_spawn_file_actions_destroy(&file_actions);
+ out_pre_file_actions:
 
   for ( size_t i = 0; i < environ_entries + 1; i++ ) {
     if ( new_environ[i] ) {
@@ -294,6 +291,12 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   if ( sockets[1] != -1 ) {
     close(sockets[1]);
   }
+
+  if ( result == 0 && out_result ) {
+    out_result->pid = pid;
+    out_result->socket = sockets[0];
+  }
+
   return result == 0;
 }
 
