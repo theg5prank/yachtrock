@@ -27,7 +27,7 @@
 #elif __linux__ || defined(MSG_NOSIGNAL)
 #define USE_MSG_NOSIGNAL 1
 #else
-#error don't know how to avoid SIGPIPE on this platform!
+#error "don't know how to avoid SIGPIPE on this platform!"
 #endif
 
 #include "yrutil.h"
