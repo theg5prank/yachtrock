@@ -22,7 +22,7 @@
 #define ERRBUF_SIZE 128
 static void emit_diagnostic(int code, const char *fmt, va_list ap)
 {
-  char buf[128];
+  char buf[ERRBUF_SIZE];
   strerror_r(errno, buf, sizeof(buf));
 #if YR_USE_PROG_INVOK_NAME
   fprintf(stderr, "%s: ", program_invocation_name);
