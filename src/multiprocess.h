@@ -9,6 +9,8 @@
 #include <sys/time.h>
 #include <stdint.h>
 
+#define DEBUG_INFERIOR_VAR "YR_DEBUG_INFERIOR"
+
 struct inferior_handle {
   pid_t pid;
   int socket;

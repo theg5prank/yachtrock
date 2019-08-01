@@ -1,3 +1,8 @@
+#if __APPLE__
+// for u_int (for sysctl)
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <yachtrock/yachtrock.h>
 
 #if YACHTROCK_MULTIPROCESS
@@ -5,10 +10,137 @@
 #include <err.h>
 #include <stdint.h>
 #include <sysexits.h>
+#include <signal.h>
 #include <assert.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 
 #include "multiprocess_inferior.h"
 #include "yrutil.h"
+
+#define HAVE_DEBUGGER_DETECTION __APPLE__ || __linux__
+
+static bool is_debugger_attached(void)
+{
+  bool result = false;
+#if __APPLE__
+  int mib[4];
+  struct kinfo_proc info;
+  size_t size;
+
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PID;
+  mib[3] = getpid();
+
+  size = sizeof(info);
+  if ( sysctl(mib, sizeof(mib) / sizeof(mib[0]), &info, &size, NULL, 0) != 0 ) {
+    yr_warn("sysctl in %s", __FUNCTION__);
+  } else {
+    result = (info.kp_proc.p_flag & P_TRACED);
+  }
+#elif __linux__
+  /* Search for TracerPid in /proc/self/status */
+  static const char *path = "/proc/self/status";
+  FILE *f = fopen(path, "r");
+  if ( !f ) {
+    yr_warn("couldn't open %s", path);
+    goto out;
+  }
+  char linebuf[512]; // more than enough for a valid TracerPid line
+  bool found = false;
+  while ( !found && !feof(f) && !ferror(f) ) {
+    static const char * const tracerpid_needle = "TracerPid:";
+    const char *tracerpid_loc = NULL;
+    if ( fgets(linebuf, sizeof(linebuf), f) == NULL ) {
+      if ( ferror(f) ) {
+        yr_warn("fgets in %s", __FUNCTION__);
+      }
+    } else if ( (tracerpid_loc = strstr(linebuf, tracerpid_needle)) ) {
+      found = true;
+      result = strtol(tracerpid_loc + strlen(tracerpid_needle), NULL, 10) > 0;
+    }
+  }
+
+ out:
+  if ( f ) {
+    fclose(f);
+  }
+#else
+#if HAVE_DEBUGGER_DETECTION
+#error "Should not reach here on a platform with debugger detection."
+#endif
+#endif
+  return result;
+}
+
+static volatile sig_atomic_t sigcont_caught = 0;
+
+static void sigcont_handler(int signo)
+{
+  sigcont_caught = 1;
+}
+
+static void wait_for_debugger(void)
+{
+  sigcont_caught = 0;
+
+  struct sigaction new_action = {};
+  struct sigaction old_action = {};
+  sigemptyset(&new_action.sa_mask); // sure whatever.
+  new_action.sa_handler = sigcont_handler;
+  int result = 0;
+  EINTR_RETRY(result = sigaction(SIGCONT, &new_action, &old_action));
+  if ( result != 0 ) {
+    yr_err(EX_OSERR, "sigaction failed: set in %s", __FUNCTION__);
+  }
+
+  sigset_t new_set;
+  sigemptyset(&new_set);
+  sigaddset(&new_set, SIGCONT);
+  sigset_t old_set;
+  EINTR_RETRY(result = sigprocmask(SIG_UNBLOCK, &new_set, &old_set));
+  if ( result != 0 ) {
+    yr_err(EX_OSERR, "sigprocmask failed: set in %s", __FUNCTION__);
+  }
+
+  while ( !sigcont_caught && !is_debugger_attached() ) {
+    struct timespec waittime;
+    waittime.tv_sec = 0;
+    waittime.tv_nsec = 250000000;
+    nanosleep(&waittime, NULL);
+  };
+
+  EINTR_RETRY(result = sigprocmask(SIG_SETMASK, &old_set, NULL));
+  if ( result != 0 ) {
+    yr_err(EX_OSERR, "sigprocmask failed: unwind in %s", __FUNCTION__);
+  }
+
+  EINTR_RETRY(result = sigaction(SIGCONT, &old_action, NULL));
+  if ( result != 0 ) {
+    yr_err(EX_OSERR, "sigaction failed: unwind in %s", __FUNCTION__);
+  }
+}
+
+static void maybe_wait_for_debugger(void)
+{
+  if ( getenv(DEBUG_INFERIOR_VAR) ) {
+    if ( unsetenv(DEBUG_INFERIOR_VAR) ) {
+      yr_warn("unsetenv in %s", __FUNCTION__);
+    }
+    static const char * const msg_fmt =
+#if HAVE_DEBUGGER_DETECTION
+      "Waiting for debugger attach or SIGCONT to pid %d"
+#else
+      "Waiting for SIGCONT to pid %d"
+#endif
+      ;
+    yr_warnx(msg_fmt, (int)getpid());
+    wait_for_debugger();
+  }
+}
 
 struct inferior_state {
   yr_test_suite_t opened_suite;
@@ -197,6 +329,7 @@ static bool inferior_handle_message(int sock, struct yr_message *command_message
 void yr_inferior_loop(yr_test_suite_collection_t collection,
                       struct yr_runtime_callbacks runtime_callbacks)
 {
+  maybe_wait_for_debugger();
   struct inferior_state state;
   state.opened_suite = NULL;
   int sock = yr_inferior_socket();
