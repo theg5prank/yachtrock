@@ -68,6 +68,10 @@ static bool is_debugger_attached(void)
   if ( f ) {
     fclose(f);
   }
+#else
+#if HAVE_DEBUGGER_DETECTION
+#error "Should not reach here on a platform with debugger detection."
+#endif
 #endif
   return result;
 }
@@ -101,7 +105,7 @@ static void wait_for_debugger(void)
   if ( result != 0 ) {
     yr_err(EX_OSERR, "sigprocmask failed: set in %s", __FUNCTION__);
   }
-  
+
   while ( !sigcont_caught && !is_debugger_attached() ) {
     struct timespec waittime;
     waittime.tv_sec = 0;
@@ -126,7 +130,14 @@ static void maybe_wait_for_debugger(void)
     if ( unsetenv(DEBUG_INFERIOR_VAR) ) {
       yr_warn("unsetenv in %s", __FUNCTION__);
     }
-    yr_warnx("Waiting for debugger attach or SIGCONT to pid %d", (int)getpid());
+    static const char * const msg_fmt =
+#if HAVE_DEBUGGER_DETECTION
+      "Waiting for debugger attach or SIGCONT to pid %d"
+#else
+      "Waiting for SIGCONT to pid %d"
+#endif
+      ;
+    yr_warnx(msg_fmt, (int)getpid());
     wait_for_debugger();
   }
 }
