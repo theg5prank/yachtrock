@@ -13,6 +13,6 @@ YACHTROCK_EXTERN const unsigned yr_patch;
 /**
  * Precomposed Yachtrock version string.
  */
-YACHTROCK_EXTERN const char *yr_version;
+YACHTROCK_EXTERN const char * const yr_version;
 
 #endif

@@ -10,8 +10,8 @@
 #include "yrutil.h"
 #include "version_internal.h"
 
-extern const char *yr_runtests_what;
-const char *yr_runtests_what =
+extern const char * const yr_runtests_what;
+const char * const yr_runtests_what =
   "@(#) PROGRAM:yr_runtests  PROJECT:libyachtrock " YR_VERSION_LITERAL;
 
 extern char **environ;
