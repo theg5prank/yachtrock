@@ -189,7 +189,7 @@ int main(int argc, char **argv)
   yr_result_store_close(store);
 
   if ( !inferior ) {
-    char *desc = yr_result_store_copy_description(store);
+    char *desc = yr_result_store_copy_description_ansi(store, yr_use_terminal_color());
     fprintf(stdout, "%s\n", desc);
     free(desc);
   }

@@ -3,6 +3,7 @@
 
 #include <stdnoreturn.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef __has_include
 #  if __has_include(<err.h>)
@@ -73,6 +74,8 @@ extern noreturn void __yr_runtime_assert_fail__(char *fmt, ...);
 extern void *yr_malloc(size_t size);
 extern void *yr_calloc(size_t size, size_t nobj);
 extern void *yr_realloc(void *ptr, size_t size);
+
+extern bool yr_use_terminal_color(void);
 
 #if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
 /* gcc 4.8 doesn't define __STDC_NO_ATOMICS__ but doesn't have stdatomic.h

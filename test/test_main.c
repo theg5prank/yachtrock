@@ -1,4 +1,5 @@
 #include "yrtests.h"
+#include <unistd.h>
 
 extern char **environ;
 
@@ -33,7 +34,8 @@ int main(int argc, char **argv)
   yr_result_store_close(store);
   free(collection);
 
-  char *desc = yr_result_store_copy_description(store);
+  char *desc = yr_result_store_copy_description_ansi(store, (isatty(2) && getenv("TERM") &&
+                                                             strcmp(getenv("TERM"), "dumb") != 0));
   fprintf(stdout, "%s\n", desc);
   free(desc);
   yr_result_t result = yr_result_store_get_result(store);

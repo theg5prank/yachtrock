@@ -90,7 +90,13 @@ static void basic_run_suite_note_assertion_failed(const char *assertion, const c
   va_end(copy);
   char desc[necessary];
   vsnprintf(desc, sizeof(desc), s, ap);
-  fprintf(stderr, "Assertion \"%s\" failed: %s:%zu (in %s): %s\n", assertion, file, line, funname, desc);
+  char *coloron = "", *coloroff = "";
+  if ( yr_use_terminal_color() ) {
+    coloron = "\e[31m";
+    coloroff = "\e[0m";
+  }
+  fprintf(stderr, "Assertion \"%s\" %sfailed%s: %s:%zu (in %s): %s\n",
+          assertion, coloron, coloroff, file, line, funname, desc);
 }
 static void basic_run_suite_note_skipped(const char *file, size_t line, const char *funname,
                                          const char *reason, va_list ap, void *refcon)
@@ -102,7 +108,14 @@ static void basic_run_suite_note_skipped(const char *file, size_t line, const ch
   va_end(copy);
   char desc[necessary];
   vsnprintf(desc, sizeof(desc), reason, ap);
-  fprintf(stderr, "Skipping test (%s:%zu, in %s): %s\n", file, line, funname, desc);
+  char *coloron = "", *coloroff = "";
+  if ( yr_use_terminal_color() ) {
+    coloron = "\e[33m";
+    coloroff = "\e[0m";
+  }
+
+  fprintf(stderr, "%sSkipping%s test (%s:%zu, in %s): %s\n",
+          coloron, coloroff, file, line, funname, desc);
 }
 
 static int indentation_spaces(yr_result_store_t store)
@@ -124,23 +137,33 @@ static void yr_basic_store_opened_callback(yr_result_store_t store, void *refcon
 static void yr_basic_store_closed_callback(yr_result_store_t store, void *refcon)
 {
   char *output = NULL;
+  char *coloron = "\e[0m", *coloroff = "\e[0m";
   switch ( yr_result_store_get_result(store) ) {
   case YR_RESULT_UNSET:
+    coloron = "\e[36m";
     output = "[NO RESULT (?)]";
     break;
   case YR_RESULT_PASSED:
+    coloron = "\e[32m";
     output = "[OK]";
     break;
   case YR_RESULT_FAILED:
+    coloron = "\e[31m";
     output = "[FAIL]";
     break;
   case YR_RESULT_SKIPPED:
+    coloron = "\e[33m";
     output = "[SKIPPED]";
     break;
   }
 
-  fprintf(stderr, "%*sclosing %s %s\n", indentation_spaces(store), "",
-          yr_result_store_get_name(store), output);
+  if ( !yr_use_terminal_color() ) {
+    coloron = "";
+    coloroff = "";
+  }
+
+  fprintf(stderr, "%*sclosing %s %s%s%s\n", indentation_spaces(store), "",
+          yr_result_store_get_name(store), coloron, output, coloroff);
 }
 
 const struct yr_runtime_callbacks YR_BASIC_STDERR_RUNTIME_CALLBACKS = {

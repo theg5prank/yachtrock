@@ -162,4 +162,27 @@ YACHTROCK_EXTERN size_t yr_result_store_get_description(yr_result_store_t store,
  */
 YACHTROCK_EXTERN char *yr_result_store_copy_description(yr_result_store_t store);
 
+/**
+ * Construct a string that describes the given store hierarchy, optionally with ANSI
+ * terminal codes.
+ *
+ * This fuction writes at most buf_size bytes into buf. The result is always NUL-terminated, unless
+ * buf_size is zero.
+ *
+ * The return value is how many bytes would be written if given infinite space, even if the function
+ * was actually forced to truncate the result written into buf.
+ */
+YACHTROCK_EXTERN size_t yr_result_store_get_description_ansi(yr_result_store_t store, char *buf,
+                                                             size_t buf_size, bool colored);
+
+/**
+ * Construct a string on the heap that describes the given store hierarchy, optionally
+ * with ANSI terminal codes.
+ *
+ * The result must be passed to free by the caller.
+ */
+YACHTROCK_EXTERN char *yr_result_store_copy_description_ansi(yr_result_store_t store,
+                                                             bool colored);
+
+
 #endif

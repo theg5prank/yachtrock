@@ -11,8 +11,25 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <yachtrock/yachtrock.h>
 
 #include "yrutil.h"
+
+#if YR_USE_STDTHREADS
+#include <threads.h>
+typedef once_flag yr_once_t;
+#define YR_ONCE_INIT ONCE_FLAG_INIT
+#define yr_once call_once
+#define YR_ONCE_AVAILABLE 1
+#elif YACHTROCK_POSIXY
+#include <pthread.h>
+typedef pthread_once_t yr_once_t;
+#define YR_ONCE_INIT PTHREAD_ONCE_INIT
+#define yr_once pthread_once
+#define YR_ONCE_AVAILABLE 1
+#else
+#define YR_ONCE_AVAILABLE 0
+#endif
 
 #if !YR_HAVE_ERR_H || !YR_HAVE_ERRC
 
@@ -152,4 +169,24 @@ void *yr_realloc(void *ptr, size_t size)
     result = realloc(ptr, size);
   } while ( (result == NULL && size != 0) && (yr_allocation_failure(), true) );
   return result;
+}
+
+#if YR_ONCE_AVAILABLE
+static bool use_terminal_color;
+static void init_use_terminal_color(void)
+{
+  char *term = getenv("TERM");
+  use_terminal_color = isatty(2) && term && term[0] && strcmp(term, "dumb");
+}
+#endif
+
+bool yr_use_terminal_color(void)
+{
+#if YR_ONCE_AVAILABLE
+  static yr_once_t once = YR_ONCE_INIT;
+  yr_once(&once, init_use_terminal_color);
+  return use_terminal_color;
+#else
+  return 0;
+#endif
 }

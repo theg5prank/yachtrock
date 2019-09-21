@@ -209,20 +209,22 @@ yr_result_store_t yr_result_store_get_subresult(yr_result_store_t store, size_t 
 #endif
 
 static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf,
-                                                     size_t buf_size, unsigned depth);
+                                                     size_t buf_size, bool colored,
+                                                     unsigned depth);
 struct _get_description_enumeration_context
 {
   char *buf;
   size_t buf_size;
   unsigned depth;
   size_t amount;
+  bool colored;
 };
 
 static void _get_description_child_enumerator(yr_result_store_t subresult, void *refcon)
 {
   struct _get_description_enumeration_context *context = refcon;
   size_t used = _yr_result_store_get_description_depth(subresult, context->buf, context->buf_size,
-                                                       context->depth + 1);
+                                                       context->colored, context->depth + 1);
   size_t advance = MIN(context->buf_size, used);
   context->buf += advance;
   context->buf_size -= advance;
@@ -230,7 +232,9 @@ static void _get_description_child_enumerator(yr_result_store_t subresult, void 
 }
 
 // This function returns the number of characters NOT including the terminating NUL
-static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf, size_t buf_size, unsigned depth)
+static size_t _yr_result_store_get_description_depth(yr_result_store_t store, char *buf,
+                                                     size_t buf_size, bool colored,
+                                                     unsigned depth)
 {
   char _;
   if ( buf == NULL ) {
@@ -241,28 +245,39 @@ static size_t _yr_result_store_get_description_depth(yr_result_store_t store, ch
   }
 
   char *result_addendum = NULL;
+  char *coloron = "\e[0m", *coloroff = "\e[0m";
   switch ( yr_result_store_get_result(store) ) {
   case YR_RESULT_UNSET:
+    coloron = "\e[36m";
     result_addendum = " [UNSET]";
     break;
   case YR_RESULT_PASSED:
+    coloron = "\e[32m";
     result_addendum = " [PASSED]";
     break;
   case YR_RESULT_FAILED:
+    coloron = "\e[31m";
     result_addendum = " [FAILED]";
     break;
   case YR_RESULT_SKIPPED:
+    coloron = "\e[33m";
     result_addendum = " [SKIPPED]";
     break;
+  }
+
+  if ( !colored ) {
+    coloron = "";
+    coloroff = "";
   }
 
   int num_spaces = depth * 4;
   const char *name = yr_result_store_get_name(store);
   bool newline_required = depth != 0;
-  size_t amount = (newline_required ? 1 : 0) + num_spaces + strlen(name) + strlen(result_addendum);
+  size_t amount = (newline_required ? 1 : 0) + num_spaces + strlen(name) + strlen(result_addendum) + strlen(coloron) + strlen(coloroff);
 
   /* newline (or empty), spaces, name, addendum */
-  int written = snprintf(buf, buf_size, "%s%*s%s%s", newline_required ? "\n" : "", num_spaces, "", name, result_addendum);
+  int written = snprintf(buf, buf_size, "%s%*s%s%s%s%s", newline_required ? "\n" : "", num_spaces,
+                         "", name, coloron, result_addendum, coloroff);
   assert(written > 0);
   assert(written == amount);
   size_t advance = MIN(written, buf_size);
@@ -274,22 +289,35 @@ static size_t _yr_result_store_get_description_depth(yr_result_store_t store, ch
   enumeration_context.buf_size = buf_size;
   enumeration_context.depth = depth;
   enumeration_context.amount = 0;
+  enumeration_context.colored = colored;
 
   yr_result_store_enumerate(store, _get_description_child_enumerator, &enumeration_context);
 
   return amount + enumeration_context.amount;
 }
 
+size_t yr_result_store_get_description_ansi(yr_result_store_t store, char *buf,
+                                            size_t buf_size, bool colored)
+{
+  return _yr_result_store_get_description_depth(store, buf, buf_size, colored, 0) + 1;
+}
+
+char *yr_result_store_copy_description_ansi(yr_result_store_t store, bool colored)
+{
+  size_t necessary = yr_result_store_get_description_ansi(store, NULL, 0, colored);
+  char *buf = yr_malloc(necessary);
+  yr_result_store_get_description_ansi(store, buf, necessary, colored);
+  return buf;
+}
+
+
 size_t yr_result_store_get_description(yr_result_store_t store, char *buf, size_t buf_size)
 {
-  return _yr_result_store_get_description_depth(store, buf, buf_size, 0) + 1;
+  return yr_result_store_get_description_ansi(store, buf, buf_size, false);
 }
 
 char *yr_result_store_copy_description(yr_result_store_t store)
 {
-  size_t necessary = yr_result_store_get_description(store, NULL, 0);
-  char *buf = yr_malloc(necessary);
-  yr_result_store_get_description(store, buf, necessary);
-  return buf;
+  return yr_result_store_copy_description_ansi(store, false);
 }
 
