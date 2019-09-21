@@ -4,9 +4,6 @@
 #include <yachtrock/base.h>
 
 #include <stddef.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 struct yr_test_suite;
 typedef struct yr_test_suite yr_test_suite_s;

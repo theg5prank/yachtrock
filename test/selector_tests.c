@@ -1,5 +1,6 @@
 #include <yachtrock/selector.h>
 #include <yachtrock/testcase.h>
+#include <string.h>
 #include "yrtests.h"
 
 static YR_TESTCASE(foobar) {}

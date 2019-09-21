@@ -2,6 +2,8 @@
 
 #include <fnmatch.h>
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "yrutil.h"
 #include "testcase_internal.h"

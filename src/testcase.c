@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdalign.h>
+#include <stdio.h>
 
 #include "testcase_internal.h"
 

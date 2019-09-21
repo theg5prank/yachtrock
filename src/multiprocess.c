@@ -21,6 +21,8 @@
 #include <sysexits.h>
 #include <assert.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdio.h>
 
 #if (__APPLE__ || BSD) || defined(SO_NOSIGPIPE)
 #define USE_SO_NOSIGPIPE 1

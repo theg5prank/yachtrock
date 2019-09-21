@@ -3,7 +3,6 @@
 
 #include <yachtrock/results.h>
 #include <stdarg.h>
-#include <stddef.h>
 
 typedef void (*yr_assertion_failure_callback)(const char *assertion, const char *file, size_t line,
                                               const char *funname, const char *s, va_list ap, void *refcon);

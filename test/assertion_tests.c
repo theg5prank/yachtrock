@@ -1,6 +1,7 @@
 #include <yachtrock/yachtrock.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PASSING_TEST_CASE(name, fun, ...)       \
   static void name(yr_test_case_t tc)           \

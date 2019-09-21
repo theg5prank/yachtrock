@@ -2,6 +2,7 @@
 #define YACHTROCK_ASSERT_H
 
 #include <yachtrock/runtime.h>
+#include <string.h>
 
 /**
  * Basic assertion.

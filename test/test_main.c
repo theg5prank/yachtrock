@@ -1,5 +1,7 @@
 #include "yrtests.h"
 #include <unistd.h>
+#include <string.h>
+#include <stdio.h>
 
 extern char **environ;
 

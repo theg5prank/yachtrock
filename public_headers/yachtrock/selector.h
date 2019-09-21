@@ -3,7 +3,6 @@
 
 #include <yachtrock/testcase.h>
 #include <stdbool.h>
-#include <stddef.h>
 
 /**
  * The vtable that defines selector behavior.

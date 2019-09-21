@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "multiprocess_superior.h"
 #include "yrutil.h"
