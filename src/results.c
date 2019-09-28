@@ -245,22 +245,22 @@ static size_t _yr_result_store_get_description_depth(yr_result_store_t store, ch
   }
 
   char *result_addendum = NULL;
-  char *coloron = "\e[0m", *coloroff = "\e[0m";
+  char *coloron = "\033[0m", *coloroff = "\033[0m";
   switch ( yr_result_store_get_result(store) ) {
   case YR_RESULT_UNSET:
-    coloron = "\e[36m";
+    coloron = "\033[36m";
     result_addendum = " [UNSET]";
     break;
   case YR_RESULT_PASSED:
-    coloron = "\e[32m";
+    coloron = "\033[32m";
     result_addendum = " [PASSED]";
     break;
   case YR_RESULT_FAILED:
-    coloron = "\e[31m";
+    coloron = "\033[31m";
     result_addendum = " [FAILED]";
     break;
   case YR_RESULT_SKIPPED:
-    coloron = "\e[33m";
+    coloron = "\033[33m";
     result_addendum = " [SKIPPED]";
     break;
   }
