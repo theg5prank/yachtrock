@@ -273,9 +273,10 @@ static size_t _yr_result_store_get_description_depth(yr_result_store_t store, ch
   int num_spaces = depth * 4;
   const char *name = yr_result_store_get_name(store);
   bool newline_required = depth != 0;
-  size_t amount = (newline_required ? 1 : 0) + num_spaces + strlen(name) + strlen(result_addendum) + strlen(coloron) + strlen(coloroff);
+  size_t amount = ((newline_required ? 1 : 0) + num_spaces + strlen(name) +
+                   strlen(result_addendum) + strlen(coloron) + strlen(coloroff));
 
-  /* newline (or empty), spaces, name, addendum */
+  /* newline (or empty), spaces, name, coloron, addendum, coloroff */
   int written = snprintf(buf, buf_size, "%s%*s%s%s%s%s", newline_required ? "\n" : "", num_spaces,
                          "", name, coloron, result_addendum, coloroff);
   assert(written > 0);
