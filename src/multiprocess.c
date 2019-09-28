@@ -186,6 +186,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
                        struct inferior_handle *out_result)
 {
   int result = -1;
+  pid_t pid = 0;
 
   // copy environ but add one extra space at the end
   size_t environ_entries = environ_count(environ);
@@ -269,7 +270,6 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
     }
   }
 
-  pid_t pid;
   result = posix_spawnp(&pid, path, &file_actions, NULL, argv, new_environ);
 
   if ( result != 0 ) {
