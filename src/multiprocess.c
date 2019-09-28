@@ -132,9 +132,10 @@ static void init_socket_fd(void)
                       fd_num_str ? fd_num_str : "(null)");
 
     char *end = NULL;
-    long result = strtol(fd_num_str, &end, 10);
-    YR_RUNTIME_ASSERT(*end == '\0' && result <= INT_MAX,
+    long parsed = strtol(fd_num_str, &end, 10);
+    YR_RUNTIME_ASSERT(*end == '\0' && parsed <= INT_MAX,
                       "bogus string for socket environment variable: \"%s\"", fd_num_str);
+    int result = (int)parsed;
     // good number. sanity check that it is a file descriptor
     int flags = fcntl(result, F_GETFD);
     YR_RUNTIME_ASSERT(flags >= 0,
