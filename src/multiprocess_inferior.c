@@ -88,8 +88,8 @@ static void wait_for_debugger(void)
 {
   sigcont_caught = 0;
 
-  struct sigaction new_action = {};
-  struct sigaction old_action = {};
+  struct sigaction new_action = { .sa_handler = 0 };
+  struct sigaction old_action = { .sa_handler = 0 };
   sigemptyset(&new_action.sa_mask); // sure whatever.
   new_action.sa_handler = sigcont_handler;
   int result = 0;
