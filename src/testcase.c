@@ -187,7 +187,8 @@ static void copy_test_suite(yr_test_suite_t dst, yr_test_suite_t src)
     test_suite_string_storage_insertion_point += strlen(test_suite_string_storage_insertion_point) + 1;
   }
 
-  assert(test_suite_string_storage_insertion_point - (char *)dst <= test_suite_total_size(src));
+  assert(test_suite_string_storage_insertion_point >= (char *)dst);
+  assert((size_t)(test_suite_string_storage_insertion_point - (char *)dst) <= test_suite_total_size(src));
   assert(test_suite_total_size(src) == test_suite_total_size(dst));
 }
 

@@ -239,7 +239,8 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
       break;
     }
   }
-  YR_RUNTIME_ASSERT((new_env_place - new_environ) <= (environ_entries + 1),
+  YR_RUNTIME_ASSERT((new_env_place >= new_environ &&
+                     (size_t)(new_env_place - new_environ) <= (environ_entries + 1)),
                     "overflow of environment");
   char _;
   char *fmt = SOCKET_ENV_VAR"=%d";

@@ -222,7 +222,8 @@ yr_test_suite_t yr_test_suite_create_filtered(yr_test_suite_t suite, yr_selector
       result->cases[i].name = dup_string_bumping_string_area(cases[i]->name, &string_insertion_point);
     }
 
-    assert(string_insertion_point - ((char *)result) <= allocation_size);
+    assert(string_insertion_point >= (char*)result);
+    assert((size_t)(string_insertion_point - ((char *)result)) <= allocation_size);
   }
 
   free(cases);

@@ -280,8 +280,8 @@ static size_t _yr_result_store_get_description_depth(yr_result_store_t store, ch
   int written = snprintf(buf, buf_size, "%s%*s%s%s%s%s", newline_required ? "\n" : "", num_spaces,
                          "", name, coloron, result_addendum, coloroff);
   assert(written > 0);
-  assert(written == amount);
-  size_t advance = MIN(written, buf_size);
+  assert((size_t)written == amount);
+  size_t advance = MIN((size_t)written, buf_size);
   buf += advance;
   buf_size -= advance;
 
