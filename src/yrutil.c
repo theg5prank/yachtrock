@@ -45,8 +45,7 @@ static void emit_diagnostic(int code, const char *fmt, va_list ap)
   fprintf(stderr, "%s: ", program_invocation_name);
 #endif
   vfprintf(stderr, fmt, ap);
-  fprintf(stderr, ": ");
-  fprintf(stderr, "%s\n", buf);
+  fprintf(stderr, ": %s\n", buf);
 }
 
 #endif // !YR_HAVE_ERR_H || !YR_HAVE_ERRC
