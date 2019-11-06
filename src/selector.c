@@ -70,7 +70,7 @@ static void testname_glob_context_destroy(void *context)
   free(context);
 }
 
-static struct yr_selector_vtable testname_glob_selector_vtable = {
+static const struct yr_selector_vtable testname_glob_selector_vtable = {
   .match = testname_glob_match,
   .copy_context = testname_glob_context_copy,
   .destroy_context = testname_glob_context_destroy,
