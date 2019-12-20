@@ -70,27 +70,91 @@ static yr_test_suite_collection_t create_collection_from_path(const char *path)
   return collection;
 }
 
-int main(int argc, char **argv)
-{
-  progn = argv[0];
+struct parsed_args {
+  yr_test_suite_collection_t suite_collection;
+  char *name;
+  bool multiprocess;
+};
 
-  if ( argc <= 1 ) {
-    fprintf(stderr, "%s: no images provided to load tests from\n", argv[0]);
-    print_usage();
-    return EXIT_FAILURE;
+static yr_selector_set_t
+create_selector_set_consuming_selector_list(yr_selector_t **io_selectors,
+                                            size_t num_selectors)
+{
+  yr_selector_set_t result = NULL;
+  if ( num_selectors > 0 ) {
+    result = yr_selector_set_create(num_selectors, *io_selectors);
+    for ( size_t i = 0; i < num_selectors; i++ ) {
+      yr_selector_destroy((*io_selectors)[i]);
+    }
+    free(*io_selectors);
+    *io_selectors = NULL;
   }
 
-  // glibc says its getopt munges argv. *shrug*
-  char **argv_copy = copy_argv(argv);
+  return result;
+}
+
+static void
+create_filtered_suite_collection_consuming_collection(yr_test_suite_collection_t *io_collection,
+                                                      yr_selector_set_t set)
+{
+  if ( set ) {
+    yr_test_suite_collection_t temp = *io_collection;
+    *io_collection = yr_test_suite_collection_create_filtered(temp, set);
+    free(temp);
+  }
+}
+
+static void dispose_parsed_args(struct parsed_args *inout_parsed_args)
+{
+  free(inout_parsed_args->suite_collection);
+  inout_parsed_args->suite_collection = NULL;
+
+  free(inout_parsed_args->name);
+  inout_parsed_args->name = NULL;
+}
+
+static size_t create_collections_array(size_t count, char **paths,
+                                       yr_test_suite_collection_t **out_collections)
+{
+  size_t num_collections_loaded = 0;
+  *out_collections = malloc(sizeof(**out_collections) * count);
+  for ( size_t i = 0; i < count; i++ ) {
+    yr_test_suite_collection_t collection = create_collection_from_path(paths[i]);
+    if ( collection != NULL ) {
+      (*out_collections)[num_collections_loaded++] = collection;
+    }
+  }
+  return num_collections_loaded;
+}
+
+static void destroy_collections_array(yr_test_suite_collection_t *collections, size_t count)
+{
+  for ( size_t i = 0; i < count; i++ ) {
+    assert(collections[i]);
+    free(collections[i]);
+  }
+
+  free(collections);
+}
+
+static int parse_args(int argc, char **argv, struct parsed_args *out_parsed_args)
+{
+  int result = EXIT_SUCCESS;
 
   char *name = NULL;
   int ch;
-  bool multiprocess = YACHTROCK_MULTIPROCESS;
 
   yr_selector_t *selectors = NULL;
   size_t num_selectors = 0;
   size_t selectors_capacity = 0;
   yr_selector_set_t selector_set = NULL;
+  bool multiprocess = YACHTROCK_MULTIPROCESS;
+
+  char **argv_copy = copy_argv(argv);
+
+  yr_test_suite_collection_t *collections = NULL;
+  size_t num_collections_loaded = 0;
+  yr_test_suite_collection_t final_collection = NULL;
 
   while ( (ch = getopt(argc, argv_copy, "umn:g:")) != -1 ) {
     switch ( ch ) {
@@ -101,7 +165,7 @@ int main(int argc, char **argv)
       multiprocess = true;
       break;
     case 'n':
-      name = optarg;
+      name = yr_strdup(optarg);
       break;
     case 'g':
       {
@@ -112,78 +176,95 @@ int main(int argc, char **argv)
     case '?':
     default:
       print_usage();
-      return EX_USAGE;
+      result = EX_USAGE;
+      goto out;
     }
   }
 
-  if ( num_selectors > 0 ) {
-    selector_set = yr_selector_set_create(num_selectors, selectors);
-    for ( size_t i = 0; i < num_selectors; i++ ) {
-      yr_selector_destroy(selectors[i]);
-    }
-    free(selectors);
-    selectors = NULL;
+  if ( argc <= optind ) {
+    fprintf(stderr, "%s: no images provided to load tests from\n", argv[0]);
+    print_usage();
+    result = EXIT_FAILURE;
+    goto out;
   }
 
-  name = name ? name : "tests run from images";
+  selector_set = create_selector_set_consuming_selector_list(&selectors, num_selectors);
 
-  yr_test_suite_collection_t collections[argc - 1];
-  int num_collections_loaded = 0;
-  for ( int i = optind; i < argc; i++ ) {
-    yr_test_suite_collection_t collection = create_collection_from_path(argv_copy[i]);
-    if ( collection != NULL ) {
-      collections[num_collections_loaded++] = collection;
-    }
-  }
+  name = name ? name : yr_strdup("tests run from images");
+
+  num_collections_loaded = create_collections_array(argc - optind, argv_copy + optind,
+                                                    &collections);
 
   if ( num_collections_loaded == 0 ) {
     fprintf(stderr, "%s: all collections failed to load.\n", progn);
-    return EX_DATAERR;
+    result = EX_DATAERR;
+    goto out;
   }
 
-  yr_test_suite_collection_t final_collection =
+  final_collection =
     yr_test_suite_collection_create_from_collection_array(num_collections_loaded, collections);
 
-  for ( int i = 0; i < num_collections_loaded; i++ ) {
-    assert(collections[i]);
-    free(collections[i]);
+  create_filtered_suite_collection_consuming_collection(&final_collection, selector_set);
+
+out:
+  if ( selector_set ) {
+    yr_selector_set_destroy(selector_set);
+  }
+
+  destroy_collections_array(collections, num_collections_loaded);
+
+  free_copied_argv(argv_copy);
+
+  if ( result == EXIT_SUCCESS ) {
+    out_parsed_args->suite_collection = final_collection;
+    out_parsed_args->name = name;
+    out_parsed_args->multiprocess = multiprocess;
+  } else {
+    free(final_collection);
+    free(name);
+  }
+  return result;
+}
+
+int main(int argc, char **argv)
+{
+  progn = argv[0];
+
+  struct parsed_args parsed_args;
+  int parse_result = parse_args(argc, argv, &parsed_args);
+  if ( parse_result != EXIT_SUCCESS ) {
+    return parse_result;
   }
 
   bool inferior =
 #if YACHTROCK_MULTIPROCESS
-    yr_process_is_inferior();
+    yr_process_is_inferior()
 #else
-    false;
+    false
 #endif
+    ;
 
-  if ( selector_set ) {
-    yr_test_suite_collection_t temp = final_collection;
-    final_collection = yr_test_suite_collection_create_filtered(temp, selector_set);
-    free(temp);
-    yr_selector_set_destroy(selector_set);
-    selector_set = NULL;
-
-    if ( final_collection == NULL ) {
-      fprintf(stderr, "%s: all tests were filtered out.\n", progn);
-      return EX_DATAERR;
-    }
+  if ( parsed_args.suite_collection == NULL ) {
+    fprintf(stderr, "%s: all tests were filtered out.\n", progn);
+    return EX_DATAERR;
   }
 
   struct yr_result_hooks hooks = (inferior ?
                                   (struct yr_result_hooks){0} : YR_BASIC_STDERR_RESULT_HOOKS);
-  yr_result_store_t store = yr_result_store_create_with_hooks(name, hooks);
+  yr_result_store_t store = yr_result_store_create_with_hooks(parsed_args.name, hooks);
 
-  if ( multiprocess ) {
+  if ( parsed_args.multiprocess ) {
 #if YACHTROCK_MULTIPROCESS
     yr_run_suite_collection_under_store_multiprocess(argv[0], argv, environ,
-                                                     final_collection, store,
+                                                     parsed_args.suite_collection, store,
                                                      YR_BASIC_STDERR_RUNTIME_CALLBACKS);
 #else
     fprintf(stderr, "%s: Not built with multiprocess support.\n", progn);
     return EX_UNAVAILABLE;
 #endif
   } else {
-    yr_run_suite_collection_under_store(final_collection, store, YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+    yr_run_suite_collection_under_store(parsed_args.suite_collection, store,
+                                        YR_BASIC_STDERR_RUNTIME_CALLBACKS);
   }
 
   yr_result_store_close(store);
@@ -197,9 +278,8 @@ int main(int argc, char **argv)
   yr_result_t result = yr_result_store_get_result(store);
 
   yr_result_store_destroy(store);
-  free(final_collection);
-  /* Note that the result store may be initialized with a name drawn from argv_copy */
-  free_copied_argv(argv_copy);
+
+  dispose_parsed_args(&parsed_args);
 
   return result == YR_RESULT_PASSED ? EXIT_SUCCESS : EXIT_FAILURE;
 }
