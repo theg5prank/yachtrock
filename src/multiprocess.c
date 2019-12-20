@@ -206,7 +206,7 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
   int sockets[2] = { -1, -1 };
   if ( socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0 ) {
     yr_warn("socketpair failed");
-    goto out;
+    goto out_pre_file_actions;
   }
 
   for ( int i = 0; i < 2; i++ ) {
@@ -214,18 +214,18 @@ bool yr_spawn_inferior(char *path, char **argv, char **environ,
     int on = 1;
     if ( setsockopt(sockets[i], SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on)) ) {
       yr_warn("setsockopt failed for SO_NOSIGPIPE");
-      goto out;
+      goto out_pre_file_actions;
     }
 #endif
 
     int flags = fcntl(sockets[i], F_GETFL);
     if ( flags == -1 ) {
       yr_warn("fcntl(F_GETFL) failed");
-      goto out;
+      goto out_pre_file_actions;
     }
     if ( fcntl(sockets[i], F_SETFL, flags | O_NONBLOCK) == -1 ) {
       yr_warn("fcntl(F_SETFL) failed");
-      goto out;
+      goto out_pre_file_actions;
     }
   }
 
