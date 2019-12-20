@@ -196,6 +196,74 @@ static bool spawn_inferior_if_necessary(char *path, char **argv, char **environ,
   return ok;
 }
 
+static bool process_case_result(struct yr_message *message,
+                                size_t suite_index, size_t case_index,
+                                yr_result_store_t case_store)
+{
+  size_t result_suiteid = 0, result_caseid = 0;
+  yr_result_t result = YR_RESULT_UNSET;
+  bool ok = yr_extract_info_from_case_result_message(message, &result_suiteid, &result_caseid, &result);
+  if ( !ok ) {
+    yr_warnx("couldn't parse case result message");
+  } else if ( result_suiteid != suite_index || result_caseid != case_index ||
+              !result_valid(result) ) {
+    yr_warnx("bogus case result message: %zu %zu %d", result_suiteid, result_caseid, (int)result);
+    ok = false;
+  } else {
+    yr_result_store_record_result(case_store, result);
+  }
+  return ok;
+}
+
+static bool process_case_finished(struct yr_message *message,
+                                  size_t suite_index, size_t case_index,
+                                  yr_result_store_t case_store)
+{
+  size_t finished_suiteid = 0, finished_caseid = 0;
+  bool ok = yr_extract_ids_from_case_finished_message(message, &finished_suiteid, &finished_caseid);
+  if ( !ok ) {
+    yr_warnx("couldn't parse case finished message");
+  } else if ( finished_suiteid != suite_index || finished_caseid != case_index ) {
+    yr_warnx("bogus case finished message: %zu %zu", finished_suiteid, finished_caseid);
+    ok = false;
+  }
+  return ok;
+}
+
+enum handle_message_result { proceed, halt, error };
+
+static enum handle_message_result handle_invoke_case_message_once(struct inferior_handle inferior,
+                                                                   size_t suite_index, size_t case_index,
+                                                                   yr_result_store_t case_store)
+{
+  struct yr_message *message = NULL;
+  bool ok = yr_recv_message(inferior.socket, &message, NULL);
+  if ( ok ) {
+    switch ( message->message_code ) {
+    case MESSAGE_CASE_RESULT: {
+      ok = process_case_result(message, suite_index, case_index, case_store);
+      break;
+    }
+    case MESSAGE_CASE_FINISHED: {
+      ok = process_case_finished(message, suite_index, case_index, case_store);
+      break;
+    }
+    default:
+      yr_warnx("unknown message from inferior %d", message->message_code);
+      ok = false;
+      break;
+    }
+  }
+
+  enum handle_message_result result = ok ?
+    ( message->message_code == MESSAGE_CASE_FINISHED ? halt : proceed ) :
+    error;
+
+  free(message);
+
+  return result;
+}
+
 static bool invoke_case(struct inferior_handle inferior, size_t suite_index, size_t case_index,
                         yr_result_store_t case_store)
 {
@@ -208,48 +276,15 @@ static bool invoke_case(struct inferior_handle inferior, size_t suite_index, siz
   free(message);
   message = NULL;
 
+  bool finished = false;
+
   if ( ok ) {
     do {
-      free(message);
-      message = NULL;
-      ok = yr_recv_message(inferior.socket, &message, NULL);
-      if ( ok ) {
-        switch ( message->message_code ) {
-        case MESSAGE_CASE_RESULT: {
-          size_t result_suiteid = 0, result_caseid = 0;
-          yr_result_t result = YR_RESULT_UNSET;
-          ok = yr_extract_info_from_case_result_message(message, &result_suiteid, &result_caseid, &result);
-          if ( !ok ) {
-            yr_warnx("couldn't parse case result message");
-          } else if ( result_suiteid != suite_index || result_caseid != case_index ||
-                      !result_valid(result) ) {
-            yr_warnx("bogus case result message: %zu %zu %d", result_suiteid, result_caseid, (int)result);
-            ok = false;
-          } else {
-            yr_result_store_record_result(case_store, result);
-          }
-          break;
-        }
-        case MESSAGE_CASE_FINISHED: {
-          size_t finished_suiteid = 0, finished_caseid = 0;
-          ok = yr_extract_ids_from_case_finished_message(message, &finished_suiteid, &finished_caseid);
-          if ( !ok ) {
-            yr_warnx("couldn't parse case finished message");
-          } else if ( finished_suiteid != suite_index || finished_caseid != case_index ) {
-            yr_warnx("bogus case finished message: %zu %zu", finished_suiteid, finished_caseid);
-            ok = false;
-          }
-          break;
-        }
-        default:
-          yr_warnx("unknown message from inferior %d", message->message_code);
-          ok = false;
-          break;
-        }
-      }
-    } while ( ok && message->message_code != MESSAGE_CASE_FINISHED );
-    free(message);
-    message = NULL;
+      enum handle_message_result result =
+        handle_invoke_case_message_once(inferior, suite_index, case_index, case_store);
+      ok = (result != error);
+      finished = (result == halt);
+    } while ( ok && !finished );
   }
 
   if ( !ok ) {
