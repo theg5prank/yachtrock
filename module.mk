@@ -60,6 +60,8 @@ LIBYACHTROCK_LINKS += -ldl
 YR_RUNTESTS_LINKS += -ldl
 else ifeq ($(UNAME_S),SunOS)
 LIBYACHTROCK_LINKS += -lsocket -lnsl
+else ifeq ($(UNAME_S),FreeBSD)
+LIBYACHTROCK_LINKS += -lstdthreads
 endif
 
 ifneq ($(UNAME_S),Darwin)

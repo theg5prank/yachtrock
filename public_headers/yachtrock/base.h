@@ -5,8 +5,11 @@
 
 #ifdef __cplusplus
 #define YACHTROCK_EXTERN extern "C"
+#define YACHTROCK_NORETURN
 #else
 #define YACHTROCK_EXTERN extern
+#include <stdnoreturn.h>
+#define YACHTROCK_NORETURN noreturn
 #endif
 
 #define YR_STR(X) #X

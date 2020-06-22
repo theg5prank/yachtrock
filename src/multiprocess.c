@@ -54,7 +54,7 @@ typedef once_flag yr_once_t;
 #define YR_ONCE_INIT ONCE_FLAG_INIT
 #define yr_once call_once
 typedef mtx_t yr_mtx_t;
-#define yr_mtx_init mtx_init
+#define yr_mtx_init(mtx) mtx_init(mtx, mtx_plain)
 #define yr_mtx_init_ok thrd_success
 #define yr_mtx_lock mtx_lock
 #define yr_mtx_unlock mtx_unlock
