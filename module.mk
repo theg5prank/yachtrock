@@ -18,9 +18,7 @@ $(LIBYACHTROCK_DIR)public_headers/yachtrock/config.h: $(LIBYACHTROCK_DIR)write_c
 YACHTROCK_GENERATED_HEADERS := $(LIBYACHTROCK_DIR)public_headers/yachtrock/config.h
 GENERATED_HEADERS += $(YACHTROCK_GENERATED_HEADERS)
 
-UNAME_S := $(shell uname -s)
-
-ifeq ($(UNAME_S),Darwin)
+ifeq ($(YAP_UNAME_S),Darwin)
 LIBYACHTROCK_DYLIBNAME := libyachtrock.dylib
 else
 LIBYACHTROCK_DYLIBNAME := libyachtrock.so
@@ -28,13 +26,14 @@ endif
 
 YR_RUNTESTS := yr_runtests
 
-PRODUCTS += $(LIBYACHTROCK_DYLIBNAME)
+all: $(LIBYACHTROCK_DYLIBNAME)
 
 ifeq ($(YACHTROCK_DLOPEN),1)
-PRODUCTS += $(YR_RUNTESTS)
+all: $(YR_RUNTESTS)
+install: install_yr_runtests
 endif
 
-MODULE_CLEANS += clean_libyachtrock
+clean: clean_libyachtrock
 
 LIBYACHTROCK_GENERATED_SRC := 
 LIBYACHTROCK_GENERATED_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_GENERATED_SRC))
@@ -52,22 +51,7 @@ LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers
 CSRC += $(LIBYACHTROCK_SRC) $(YR_RUNTESTS_SRC)
 LIBYACHTROCK_OBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_SRC)))
 LIBYACHTROCK_LINKS = -lpthread
-
-YR_RUNTESTS_LINKS =
-
-ifeq ($(UNAME_S),Linux)
-LIBYACHTROCK_LINKS += -ldl
-YR_RUNTESTS_LINKS += -ldl
-else ifeq ($(UNAME_S),SunOS)
-LIBYACHTROCK_LINKS += -lsocket -lnsl
-else ifeq ($(UNAME_S),FreeBSD)
-LIBYACHTROCK_LINKS += -lstdthreads
-endif
-
-ifneq ($(UNAME_S),Darwin)
-YR_RUNTESTS_LINKS += -Wl,-rpath,$(PREFIX)/lib
-endif
-
+LIBYACHTROCK_YAP_LINK_OPTIONS = --stdthreads --sockets --dl
 
 YR_RUNTESTS_OBJ := $(patsubst %.c,%.o,$(filter %.c,$(YR_RUNTESTS_SRC)))
 
@@ -79,16 +63,11 @@ $(LIBYACHTROCK_STATIC_SRC): $(LIBYACHTROCK_GENERATED_SRC)
 
 $(LIBYACHTROCK_OBJ): CFLAGS += -fPIC -D_POSIX_C_SOURCE=200809L -Wmissing-prototypes
 
-ifeq ($(UNAME_S),Darwin)
 $(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_OBJ)
-	$(CC) -dynamiclib $(LIBYACHTROCK_OBJ) -install_name $(PREFIX)/lib/$@ $(LIBYACHTROCK_LINKS) -o $@
-else
-$(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_OBJ)
-	$(CC) -shared $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -Wl,-rpath,$(PREFIX)/lib/$@ -o $@
-endif
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name $(PREFIX)/lib/$@ $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -o $@
 
 $(YR_RUNTESTS): $(YR_RUNTESTS_OBJ) $(LIBYACHTROCK_DYLIBNAME)
-	$(CC) $^ -o $@ $(YR_RUNTESTS_LINKS)
+	$(YAP_LINK) --driver $(CC) --links_self_using_prefix "$(PREFIX)" --dl -- $^ -o $@
 
 clean_libyachtrock:
 	rm -f $(LIBYACHTROCK_DYLIBNAME)
@@ -99,38 +78,27 @@ clean_libyachtrock:
 
 install: install_libyachtrock_dylib install_libyachtrock_headers
 
-ifneq ($(filter $(YR_RUNTESTS),$(PRODUCTS)),)
-install: install_yr_runtests
-else
-install: uninstall_yr_runtests
-endif
-
-uninstall_yr_runtests:
-ifneq ($(shell [ -f $(PREFIX)/bin/$(YR_RUNTESTS) ] && echo "do it"),)
-	rm -f $(PREFIX)/bin/$(YR_RUNTESTS)
-endif
-
 install_yr_runtests: $(PREFIX)/bin/$(YR_RUNTESTS)
 
 $(PREFIX)/bin/$(YR_RUNTESTS): $(YR_RUNTESTS) $(PREFIX)/bin
-	$(INSTALLER) -m 0755 -vc $< $(PREFIX)/bin
+	$(YAP_INSTALL) -m 0755 -vc $< $(PREFIX)/bin
 
 install_libyachtrock_dylib: $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
 
 $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_DYLIBNAME) $(PREFIX)/lib
-	$(INSTALLER) -vc $< $(PREFIX)/lib
+	$(YAP_INSTALL) -vc $< $(PREFIX)/lib
 
 install_libyachtrock_headers: libyachtrock_headers_installation_dir libyachtrock_installed_headers
 
 libyachtrock_headers_installation_dir: $(PREFIX)/include/yachtrock
 
 $(PREFIX)/include/yachtrock:
-	$(INSTALLER) -dv $(PREFIX)/include/yachtrock
+	$(YAP_INSTALL) -dv $(PREFIX)/include/yachtrock
 
 libyachtrock_installed_headers: $(LIBYACHTROCK_HEADER_INSTALLED_FILES)
 
 $(PREFIX)/include/yachtrock/%.h: $(LIBYACHTROCK_DIR)public_headers/yachtrock/%.h
-	$(INSTALLER) -m 0644 -vc $< $(PREFIX)/include/yachtrock
+	$(YAP_INSTALL) -m 0644 -vc $< $(PREFIX)/include/yachtrock
 
 libyachtrock_install_dev_dylib_links: $(PREFIX)/lib
 	ln -s `pwd`/$(LIBYACHTROCK $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
