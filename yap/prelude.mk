@@ -12,6 +12,7 @@ test:
 
 YAP_INSTALL := ./yap/install.sh
 YAP_LINK := ./yap/link.sh
+YAP_GENERATE_DYLIBNAME := ./yap/generate_dylibname.sh
 YAP_UNAME_S := $(shell uname -s)
 
 ifeq ($(shell uname),SunOS)

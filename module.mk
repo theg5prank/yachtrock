@@ -18,11 +18,7 @@ $(LIBYACHTROCK_DIR)public_headers/yachtrock/config.h: $(LIBYACHTROCK_DIR)write_c
 YACHTROCK_GENERATED_HEADERS := $(LIBYACHTROCK_DIR)public_headers/yachtrock/config.h
 GENERATED_HEADERS += $(YACHTROCK_GENERATED_HEADERS)
 
-ifeq ($(YAP_UNAME_S),Darwin)
-LIBYACHTROCK_DYLIBNAME := libyachtrock.dylib
-else
-LIBYACHTROCK_DYLIBNAME := libyachtrock.so
-endif
+LIBYACHTROCK_DYLIBNAME := $(shell $(YAP_GENERATE_DYLIBNAME) yachtrock)
 
 YR_RUNTESTS := yr_runtests
 

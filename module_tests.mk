@@ -17,11 +17,7 @@ LIBYACHTROCK_TESTSUPPORT_OBJ =
 
 YR_SIMPLE_RUNNER = $(LIBYACHTROCK_DIR)test/yachtrock_test_runner
 
-ifeq ($(YAP_UNAME_S), Darwin)
-YR_TEST_DYLIB = $(LIBYACHTROCK_DIR)test/libyachtrock_test.dylib
-else
-YR_TEST_DYLIB = $(LIBYACHTROCK_DIR)test/libyachtrock_test.so
-endif
+YR_TEST_DYLIB := $(LIBYACHTROCK_DIR)test/$(shell $(YAP_GENERATE_DYLIBNAME) yachtrock_test)
 
 YR_SELFTESTS_DYLIB = $(LIBYACHTROCK_DIR)test/libyachtrock_selftests.dylib
 YR_RUNTESTS_TEST = $(LIBYACHTROCK_DIR)test/yr_runtests_test
