@@ -1,6 +1,6 @@
 # -*- mode: makefile-gmake -*-
 
-TESTS += test_libyachtrock
+test: test_libyachtrock
 
 LIBYACHTROCK_TESTSRC := selftests_collection.c basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c run_under_store_tests.c selector_tests.c
 ifeq ($(YACHTROCK_MULTIPROCESS),1)
@@ -17,7 +17,7 @@ LIBYACHTROCK_TESTSUPPORT_OBJ =
 
 YR_SIMPLE_RUNNER = $(LIBYACHTROCK_DIR)test/yachtrock_test_runner
 
-YR_TEST_DYLIB = $(LIBYACHTROCK_DIR)test/libyachtrock_test.dylib
+YR_TEST_DYLIB := $(LIBYACHTROCK_DIR)test/$(shell $(YAP_GENERATE_DYLIBNAME) yachtrock_test)
 
 YR_SELFTESTS_DYLIB = $(LIBYACHTROCK_DIR)test/libyachtrock_selftests.dylib
 YR_RUNTESTS_TEST = $(LIBYACHTROCK_DIR)test/yr_runtests_test
@@ -39,35 +39,26 @@ clean_libyachtrock: clean_libyachtrock_tests
 
 YACHTROCK_TEST_INVOCATION_ENVIRON =
 
-ifeq ($(UNAME_S), Darwin)
 $(YR_TEST_DYLIB): $(LIBYACHTROCK_OBJ)
-	$(CC) -dynamiclib $(LIBYACHTROCK_OBJ) -install_name `pwd`/$@ $(LIBYACHTROCK_LINKS) -o $@
-else
-YR_TEST_INVOCATION_ENVIRON += LD_LIBRARY_PATH=$(LIBYACHTROCK_DIR)test
-$(YR_TEST_DYLIB): $(LIBYACHTROCK_OBJ)
-	$(CC) -shared $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -Wl,-rpath,`pwd`/$(LIBYACHTROCK_DIR)test -o $@
-endif
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -o $@
 
-ifeq ($(UNAME_S), Darwin)
+YR_TEST_DYLIB_LDFLAGS = -L`pwd`/$(LIBYACHTROCK_DIR)test -lyachtrock_test
+
 $(YR_SELFTESTS_DYLIB): $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB)
-	$(CC) -dynamiclib $(LIBYACHTROCK_TESTOBJ) -install_name `pwd`/$@ $(YR_TEST_DYLIB) -o $@
-else
-$(YR_SELFTESTS_DYLIB): $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB)
-	$(CC) -shared $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB) -Wl,-rpath,`pwd`/$(LIBYACHTROCK_DIR)test -o $@
-endif
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ --dl -- $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 $(YR_RUNTESTS_TEST): $(YR_RUNTESTS_OBJ) $(YR_TEST_DYLIB)
-	$(CC) $^ -o $@ $(YR_RUNTESTS_LINKS)
+	$(YAP_LINK) --driver $(CC) $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(YR_TEST_DYLIB_LDFLAGS) $(YR_RUNTESTS_OBJ) -o $@
 
 $(YR_MULTIPROCESS_TEST_TRAMPOLINE): $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB)
-	$(CC) $^ $(LIBYACHTROCK_LINKS) -o $@
+	$(YAP_LINK) --driver $(CC) -- $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
 
 _yr_clean_trampoline:
 	rm -f $(YR_MULTIPROCESS_TEST_TRAMPOLINE) $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o
 clean_libyachtrock: _yr_clean_trampoline
 
 $(YR_SIMPLE_RUNNER): $(LIBYACHTROCK_TESTMAIN_OBJ) $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB)
-	$(CC) $^ $(LIBYACHTROCK_LINKS) -o $@
+	$(YAP_LINK) --driver $(CC) --dl -- $(LIBYACHTROCK_TESTMAIN_OBJ) $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
 
 YR_TEST_CONDITIONAL_DEPENDENCIES :=
 
@@ -81,13 +72,8 @@ $(LIBYACHTROCK_TESTOBJ): CFLAGS += -fpic
 YACHTROCK_TEST_INVOCATION_ENVIRON += YRTEST_DUMMY_MODULE=$(LIBYACHTROCK_DIR)test/dummy_module.dylib
 
 $(LIBYACHTROCK_DIR)test/dummy_module.o: CFLAGS += -fPIC -D_POSIX_C_SOURCE=200809L
-ifeq ($(UNAME_S),Darwin)
 $(LIBYACHTROCK_DIR)test/dummy_module.dylib: $(LIBYACHTROCK_DIR)test/dummy_module.o $(YR_TEST_DYLIB)
-	$(CC) -dynamiclib $^ -o $@
-else
-$(LIBYACHTROCK_DIR)test/dummy_module.dylib: $(LIBYACHTROCK_DIR)test/dummy_module.o $(YR_TEST_DYLIB)
-	$(CC) -shared $^ -o $@
-endif
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ -- $(LIBYACHTROCK_DIR)test/dummy_module.o $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 YR_TEST_CONDITIONAL_DEPENDENCIES += $(LIBYACHTROCK_DIR)test/dummy_module.dylib
 test_libyachtrock: test_libyachtrock_via_selftest_dylib
