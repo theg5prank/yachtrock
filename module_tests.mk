@@ -48,7 +48,7 @@ $(YR_SELFTESTS_DYLIB): $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB)
 	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ --dl -- $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 $(YR_RUNTESTS_TEST): $(YR_RUNTESTS_OBJ) $(YR_TEST_DYLIB)
-	$(YAP_LINK) --driver $(CC) $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(YR_TEST_DYLIB_LDFLAGS) $(YR_RUNTESTS_OBJ) -o $@
+	$(YAP_LINK) --driver $(CC) $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(YR_RUNTESTS_OBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 $(YR_MULTIPROCESS_TEST_TRAMPOLINE): $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB)
 	$(YAP_LINK) --driver $(CC) -- $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
