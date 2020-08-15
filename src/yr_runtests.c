@@ -181,6 +181,19 @@ static int parse_args(int argc, char **argv, struct parsed_args *out_parsed_args
     }
   }
 
+  const char *env_glob = getenv("YR_RUNTESTS_GLOB");
+  if ( env_glob ) {
+    bool print_info = true;
+#if YACHTROCK_MULTIPROCESS
+    print_info = !yr_process_is_inferior();
+#endif // YACHTROCK_MULTIPROCESS
+    if ( print_info ) {
+      fprintf(stderr, "%s: using suite glob \"%s\" from environment\n", argv[0], env_glob);
+    }
+    yr_selector_t selector = yr_selector_create_from_glob(env_glob);
+    add_selector(selector, &selectors, &num_selectors, &selectors_capacity);
+  }
+
   if ( argc <= optind ) {
     fprintf(stderr, "%s: no images provided to load tests from\n", argv[0]);
     print_usage();
