@@ -20,4 +20,4 @@ jobs:
     - name: make
       run: make
     - name: make test
-      run: make test
+      run: YR_LORGE=1 make test
