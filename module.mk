@@ -60,10 +60,10 @@ $(LIBYACHTROCK_STATIC_SRC): $(LIBYACHTROCK_GENERATED_SRC)
 $(LIBYACHTROCK_OBJ): CFLAGS += -fPIC -D_POSIX_C_SOURCE=200809L -Wmissing-prototypes
 
 $(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_OBJ)
-	$(YAP_LINK) --driver $(CC) --dynamic_install_name $(PREFIX)/lib/$@ $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -o $@
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name $(PREFIX)/lib/$@ $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LDFLAGS) $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -o $@
 
 $(YR_RUNTESTS): $(YR_RUNTESTS_OBJ) $(LIBYACHTROCK_DYLIBNAME)
-	$(YAP_LINK) --driver $(CC) --links_self_using_prefix "$(PREFIX)" --dl -- $^ -o $@
+	$(YAP_LINK) --driver $(CC) --links_self_using_prefix "$(PREFIX)" --dl -- $(LDFLAGS) $^ -o $@
 
 clean_libyachtrock:
 	rm -f $(LIBYACHTROCK_DYLIBNAME)

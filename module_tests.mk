@@ -40,25 +40,25 @@ clean_libyachtrock: clean_libyachtrock_tests
 YACHTROCK_TEST_INVOCATION_ENVIRON =
 
 $(YR_TEST_DYLIB): $(LIBYACHTROCK_OBJ)
-	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -o $@
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LDFLAGS) $(LIBYACHTROCK_OBJ) $(LIBYACHTROCK_LINKS) -o $@
 
 YR_TEST_DYLIB_LDFLAGS = -L`pwd`/$(LIBYACHTROCK_DIR)test -lyachtrock_test
 
 $(YR_SELFTESTS_DYLIB): $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB)
-	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ --dl -- $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ --dl -- $(LDFLAGS) $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 $(YR_RUNTESTS_TEST): $(YR_RUNTESTS_OBJ) $(YR_TEST_DYLIB)
-	$(YAP_LINK) --driver $(CC) $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(YR_RUNTESTS_OBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
+	$(YAP_LINK) --driver $(CC) $(LIBYACHTROCK_YAP_LINK_OPTIONS) -- $(LDFLAGS) $(YR_RUNTESTS_OBJ) $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 $(YR_MULTIPROCESS_TEST_TRAMPOLINE): $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB)
-	$(YAP_LINK) --driver $(CC) -- $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
+	$(YAP_LINK) --driver $(CC) -- $(LDFLAGS) $(LIBYACHTROCK_DIR)test/multiprocess_basic_tests.o $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
 
 _yr_clean_trampoline:
 	rm -f $(YR_MULTIPROCESS_TEST_TRAMPOLINE) $(LIBYACHTROCK_DIR)test/multiprocess_test_trampoline.o
 clean_libyachtrock: _yr_clean_trampoline
 
 $(YR_SIMPLE_RUNNER): $(LIBYACHTROCK_TESTMAIN_OBJ) $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB)
-	$(YAP_LINK) --driver $(CC) --dl -- $(LIBYACHTROCK_TESTMAIN_OBJ) $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
+	$(YAP_LINK) --driver $(CC) --dl -- $(LDFLAGS) $(LIBYACHTROCK_TESTMAIN_OBJ) $(LIBYACHTROCK_TESTOBJ) $(YR_TEST_DYLIB_LDFLAGS) $(LIBYACHTROCK_LINKS) -o $@
 
 YR_TEST_CONDITIONAL_DEPENDENCIES :=
 
@@ -73,7 +73,7 @@ YACHTROCK_TEST_INVOCATION_ENVIRON += YRTEST_DUMMY_MODULE=$(LIBYACHTROCK_DIR)test
 
 $(LIBYACHTROCK_DIR)test/dummy_module.o: CFLAGS += -fPIC -D_POSIX_C_SOURCE=200809L
 $(LIBYACHTROCK_DIR)test/dummy_module.dylib: $(LIBYACHTROCK_DIR)test/dummy_module.o $(YR_TEST_DYLIB)
-	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ -- $(LIBYACHTROCK_DIR)test/dummy_module.o $(YR_TEST_DYLIB_LDFLAGS) -o $@
+	$(YAP_LINK) --driver $(CC) --dynamic_install_name `pwd`/$@ -- $(LDFLAGS) $(LIBYACHTROCK_DIR)test/dummy_module.o $(YR_TEST_DYLIB_LDFLAGS) -o $@
 
 YR_TEST_CONDITIONAL_DEPENDENCIES += $(LIBYACHTROCK_DIR)test/dummy_module.dylib
 test_libyachtrock: test_libyachtrock_via_selftest_dylib
