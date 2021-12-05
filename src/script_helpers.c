@@ -4,6 +4,7 @@
 #if YACHTROCK_HAS_SCRIPT_HELPERS
 
 #include <spawn.h>
+#include <sys/wait.h>
 
 #include "yrutil.h"
 

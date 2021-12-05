@@ -22,7 +22,7 @@ static const char basic_invoke_script[] =
   "fi\n";
 static bool write_basic_invoke_script(char *out_path_buf)
 {
-  char temp_file_name[] = "/tmp/tempscript.XXXX";
+  char temp_file_name[] = "/tmp/tempscript.XXXXXX";
   int tmpfd = mkstemp(temp_file_name);
   YR_ASSERT(tmpfd >= 0);
   if ( tmpfd < 0 ) { return false; /* bail */ }
