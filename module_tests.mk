@@ -2,7 +2,7 @@
 
 test: test_libyachtrock
 
-LIBYACHTROCK_TESTSRC := selftests_collection.c basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c run_under_store_tests.c selector_tests.c
+LIBYACHTROCK_TESTSRC := selftests_collection.c basic_tests.c result_store_tests.c assertion_tests.c testcase_tests.c run_under_store_tests.c selector_tests.c script_helpers_tests.c
 ifeq ($(YACHTROCK_MULTIPROCESS),1)
 LIBYACHTROCK_TESTSRC += multiprocess_basic_tests.c
 endif

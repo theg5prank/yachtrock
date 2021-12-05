@@ -11,6 +11,9 @@ yr_test_suite_collection_t yachtrock_selftests_collection(void)
 #if YACHTROCK_MULTIPROCESS
     yr_create_multiprocess_suite(),
 #endif
+#if YACHTROCK_HAS_SCRIPT_HELPERS
+    yr_create_script_helpers_suite(),
+#endif
     yr_create_selector_suite(),
   };
   size_t suites_count = sizeof(suites)/sizeof(suites[0]);
