@@ -18,11 +18,11 @@ typedef void (*yr_test_case_teardown_function)(yr_test_case_t testcase);
 typedef void (*yr_test_suite_setup_function)(yr_test_suite_t suite);
 typedef void (*yr_test_suite_teardown_function)(yr_test_suite_t suite);
 
-#define __YR_DEVARIADICIFY_2(dummy, A, ...) A
+#define YR_DEVARIADICIFY_2(dummy, A, ...) A
 /**
  * Helper macro to define a testcase function.
  */
-#define YR_TESTCASE(name, ...) void name(yr_test_case_t __YR_DEVARIADICIFY_2(dummy, ##__VA_ARGS__ , testcase) )
+#define YR_TESTCASE(name, ...) void name(yr_test_case_t YR_DEVARIADICIFY_2(dummy, ##__VA_ARGS__ , testcase) )
 
 /**
  * A single test case.

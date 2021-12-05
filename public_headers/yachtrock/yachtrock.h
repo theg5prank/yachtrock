@@ -6,8 +6,10 @@
 #include <yachtrock/base.h>
 #include <yachtrock/assert.h>
 #include <yachtrock/testcase.h>
+#include <yachtrock/script_helpers.h>
 #include <yachtrock/results.h>
 #include <yachtrock/selector.h>
+#include <yachtrock/version.h>
 
 /**
  * Runtime callbacks and result hooks that print status to stderr.

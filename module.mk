@@ -33,7 +33,7 @@ clean: clean_libyachtrock
 
 LIBYACHTROCK_GENERATED_SRC := 
 LIBYACHTROCK_GENERATED_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(LIBYACHTROCK_GENERATED_SRC))
-LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c yrutil.c selector.c version.c
+LIBYACHTROCK_STATIC_SRC := yachtrock.c runtime.c testcase.c results.c yrutil.c selector.c script_helpers.c version.c
 ifeq ($(YACHTROCK_MULTIPROCESS),1)
 LIBYACHTROCK_STATIC_SRC += multiprocess.c multiprocess_inferior.c multiprocess_superior.c
 endif
