@@ -175,6 +175,17 @@ YR_TESTCASE(test_case_decl_with_name, tc)
   YR_ASSERT(strlen(tc->name) > 0);
 }
 
+YR_TESTCASE(test_create_suite_with_extra_bytes)
+{
+  char *storage_loc = NULL;
+  yr_test_suite_t suite = yr_create_blank_suite_with_extra_bytes(2, 100, &storage_loc);
+  YR_ASSERT_EQUAL(suite->num_cases, 2);
+  YR_ASSERT_EQUAL(storage_loc, (char *)&(suite->cases[2]));
+  // Try scribbling there I guess. Valgrind could catch it or whatever.
+  memset(storage_loc, 'x', 100);
+  free(suite);
+}
+
 yr_test_suite_t yr_create_basic_suite(void)
 {
   return yr_create_suite_from_functions("basic tests", NULL, YR_NO_CALLBACKS,
@@ -183,5 +194,6 @@ yr_test_suite_t yr_create_basic_suite(void)
                                         do_test_basics_suite_from_functions,
                                         do_test_skip_basics,
                                         test_case_decl_name_only,
-                                        test_case_decl_with_name);
+                                        test_case_decl_with_name,
+                                        test_create_suite_with_extra_bytes);
 }

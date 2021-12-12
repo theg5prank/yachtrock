@@ -116,10 +116,20 @@ _yr_create_suite_from_functions(const char *name,
 yr_test_suite_t
 yr_create_blank_suite(size_t num_cases)
 {
-  yr_test_suite_t suite = yr_calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * num_cases, 1);
+  return yr_create_blank_suite_with_extra_bytes(num_cases, 0, NULL);
+}
+
+yr_test_suite_t
+yr_create_blank_suite_with_extra_bytes(size_t num_cases, size_t extra_bytes, char **out_extra_bytes)
+{
+  yr_test_suite_t suite =
+    yr_calloc(sizeof(yr_test_suite_s) + sizeof(yr_test_case_s) * num_cases + extra_bytes, 1);
   suite->num_cases = num_cases;
   for ( size_t i = 0; i < num_cases; i++ ) {
     suite->cases[i].suite = suite;
+  }
+  if ( out_extra_bytes ) {
+    *out_extra_bytes = (char *)&(suite->cases[num_cases]);
   }
   return suite;
 }

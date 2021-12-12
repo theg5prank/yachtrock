@@ -102,6 +102,16 @@ YACHTROCK_EXTERN yr_test_suite_t
 yr_create_blank_suite(size_t num_cases);
 
 /**
+ * Create a blank suite on the heap that you have to fill out, with extra bytes as part of the
+ * allocation.
+ *
+ * The suite has the right number of cases that have the suite pointers in the cases set correctly.
+ * Everything else is zeroed/nulled out. This is the "escape hatch", really.
+ */
+YACHTROCK_EXTERN yr_test_suite_t
+yr_create_blank_suite_with_extra_bytes(size_t num_cases, size_t extra_bytes, char **out_extra_bytes);
+
+/**
  * A collection of test suites.
  *
  * num_suites: the number of suites.
