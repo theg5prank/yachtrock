@@ -633,6 +633,23 @@ yr_inferior_checkin(yr_test_suite_collection_t collection,
                     struct yr_runtime_callbacks runtime_callbacks)
 {
   YR_RUNTIME_ASSERT(yr_process_is_inferior(), "only inferior process may call %s", __FUNCTION__);
+
+  /* Set close-on-exec on the inferior socket so it's not held open by any process the test
+   * may spawn.
+   */
+  int sock = yr_inferior_socket();
+  YR_RUNTIME_ASSERT(sock >= 0, "no inferior socket in %s?", __FUNCTION__);
+
+  int flags = fcntl(sock, F_GETFD);
+  if ( flags != -1 ) {
+    int set_flags = flags | FD_CLOEXEC;
+    if ( fcntl(sock, F_SETFD, set_flags) == -1 ) {
+      yr_warn("%s: could not set close-on-exec flag", __FUNCTION__);
+    }
+  } else {
+    yr_warn("%s: could not get current fd flags to set close-on-exec", __FUNCTION__);
+  }
+
   if ( !collection_sizes_are_32bit(collection) ) {
     yr_errx(EX_DATAERR, "%s: inferior: Collection sizes are not expressible in 32 bits. "
             "That's too big! aborting.", __FUNCTION__);

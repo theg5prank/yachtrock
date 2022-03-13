@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "multiprocess_tests.h"
 
@@ -267,6 +268,31 @@ static yr_test_suite_collection_t create_test_suspension_suite_collection(void)
   return collection;
 }
 
+static void fork_subprocess_and_abort(yr_test_case_t testcase)
+{
+  if ( fork() == 0 ) {
+    static char * const argv[] = {
+      "/bin/sh",
+      "-c",
+      "sleep 3600"
+    };
+    execv(argv[0], argv);
+  } else {
+    fprintf(stderr, "aieeee!\n");
+    abort();
+  }
+}
+
+static yr_test_suite_collection_t create_test_abort_with_subprocess_collection(void)
+{
+  yr_test_suite_t suite = yr_create_suite_from_functions("forking suite",
+                                                         NULL, YR_NO_CALLBACKS,
+                                                         fork_subprocess_and_abort);
+  yr_test_suite_collection_t collection = yr_test_suite_collection_create_from_suites(1, &suite);
+  free(suite);
+  return collection;
+}
+
 static const uint32_t lorge_num_suites = 1000;
 static const uint32_t lorge_num_cases = 1000;
 static void case_f(yr_test_case_t testcase) {}
@@ -319,6 +345,7 @@ static const struct {
   { "do_test_aborts", create_setups_teardowns_aborts_suite_collection },
   { "do_test_suspension", create_test_suspension_suite_collection },
   { "intermediate", create_test_suspension_final_suite_collection },
+  { "do_test_abort_with_forked_subprocess", create_test_abort_with_subprocess_collection },
   { "do_test_big_collections", create_lorge_collection },
 };
 
@@ -442,6 +469,23 @@ static void do_test_suspension(yr_test_case_t tc)
   free(collection);
 }
 
+static void do_test_abort_with_forked_subprocess(yr_test_case_t tc)
+{
+  setenv(env_key, __FUNCTION__, 1);
+  yr_test_suite_collection_t collection = find_creator(__FUNCTION__)();
+  yr_result_store_t store = yr_result_store_create(__FUNCTION__);
+  char *argv[2];
+  prep_argv(argv);
+
+  yr_run_suite_collection_under_store_multiprocess(argv[0], argv, environ, collection, store,
+                                                   YR_BASIC_STDERR_RUNTIME_CALLBACKS);
+  yr_result_store_close(store);
+  YR_ASSERT_EQUAL(yr_result_store_get_result(store), YR_RESULT_FAILED);
+
+  yr_result_store_destroy(store);
+  free(collection);
+}
+
 static void suite_setup_suspend_inferiority(yr_test_suite_t suite)
 {
   yr_suspend_inferiority();
@@ -501,6 +545,7 @@ yr_test_suite_t yr_create_multiprocess_suite(void)
     ENTRY(do_test_basics_setups_teardowns),
     ENTRY(do_test_aborts),
     ENTRY(do_test_suspension),
+    ENTRY(do_test_abort_with_forked_subprocess),
   };
 
   size_t num_always_cases = sizeof(always_cases) / sizeof(always_cases[0]);
