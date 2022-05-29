@@ -34,7 +34,7 @@
  * Assert that two values are equal.
  */
 #define YR_ASSERT_EQUAL(val1, val2, ...) do {                           \
-    if ( (val1) != (val2) ) {                                           \
+    if ( !((val1) == (val2)) ) {                                        \
       const char *__assertion_desc = #val1 " == " #val2;                \
       yr_fail_assertion(__assertion_desc, __FILE__, __LINE__, __FUNCTION__, "" __VA_ARGS__); \
     }                                                                   \
@@ -44,7 +44,7 @@
  * Assert that two values are not equal.
  */
 #define YR_ASSERT_NOT_EQUAL(val1, val2, ...) do {                       \
-    if ( (val1) == (val2) ) {                                           \
+    if ( !((val1) != (val2)) ) {                                        \
       const char *__assertion_desc = #val1 " != " #val2;                \
       yr_fail_assertion(__assertion_desc, __FILE__, __LINE__, __FUNCTION__, "" __VA_ARGS__); \
     }                                                                   \
