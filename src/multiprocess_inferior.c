@@ -16,7 +16,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <sys/types.h>
+#if __APPLE__
 #include <sys/sysctl.h>
+#endif // __APPLE__
 
 #include "multiprocess_inferior.h"
 #include "yrutil.h"
