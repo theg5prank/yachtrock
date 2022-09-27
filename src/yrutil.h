@@ -77,7 +77,7 @@ extern void *yr_realloc(void *ptr, size_t size);
 
 extern bool yr_use_terminal_color(void);
 
-#if (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
+#if !defined(__clang__) && (__STDC_VERSION__ >= 201112L) && !__STDC_NO_ATOMICS__
 /* gcc 4.8 doesn't define __STDC_NO_ATOMICS__ but doesn't have stdatomic.h
  * see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58016
  */
