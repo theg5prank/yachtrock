@@ -164,7 +164,7 @@ yr_test_suite_collection_create_from_collection_array(size_t num_collections,
 namespace yachtrock
 {
   template<typename CtxCls>
-  static inline CtxCls *default_suite_context_allocate(yr_test_case_t testcase)
+  static inline CtxCls *default_suite_context_allocate(yr_test_suite_t testcase)
   {
     return new CtxCls;
   }
@@ -181,11 +181,11 @@ namespace yachtrock
 
 
   template<typename CtxCls,
-           CtxCls *(*Allocator)(yr_test_case_t) = default_suite_context_allocate<CtxCls>>
+           CtxCls *(*Allocator)(yr_test_suite_t) = default_suite_context_allocate<CtxCls>>
   class per_suite_context
   {
     static void setup_suite(yr_test_suite_t suite) {
-      suite->refcon = new CtxCls;
+      suite->refcon = Allocator(suite);
     }
     static void teardown_suite(yr_test_suite_t suite) {
       CtxCls *ctx = static_cast<CtxCls *>(suite->refcon);
