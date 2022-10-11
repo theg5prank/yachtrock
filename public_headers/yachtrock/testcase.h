@@ -156,6 +156,68 @@ YACHTROCK_EXTERN yr_test_suite_collection_t
 yr_test_suite_collection_create_from_collection_array(size_t num_collections,
                                                        yr_test_suite_collection_t *collections);
 
+#ifdef __cplusplus
+
+#include <utility>
+#include <type_traits>
+
+namespace yachtrock
+{
+  template<typename CtxCls>
+  static inline CtxCls *default_suite_context_allocate(yr_test_case_t testcase)
+  {
+    return new CtxCls;
+  }
+
+  template<typename C, typename = void>
+  struct has_setup_case : public std::false_type { };
+  template<typename C>
+  struct has_setup_case<C, std::void_t<decltype(std::declval<C>().setup_case(std::declval<yr_test_case_t>()))>> : public std::true_type { };
+
+  template<typename C, typename = void>
+  struct has_teardown_case : public std::false_type { };
+  template<typename C>
+  struct has_teardown_case<C, std::void_t<decltype(std::declval<C>().teardown_case(std::declval<yr_test_case_t>()))>> : public std::true_type { };
+
+
+  template<typename CtxCls,
+           CtxCls *(*Allocator)(yr_test_case_t) = default_suite_context_allocate<CtxCls>>
+  class per_suite_context
+  {
+    static void setup_suite(yr_test_suite_t suite) {
+      suite->refcon = new CtxCls;
+    }
+    static void teardown_suite(yr_test_suite_t suite) {
+      CtxCls *ctx = static_cast<CtxCls *>(suite->refcon);
+      suite->refcon = NULL;
+      delete ctx;
+    }
+    static void setup_case(yr_test_case_t testcase) {
+      if constexpr ( has_setup_case<CtxCls>::value ) {
+        get_suite_ctx(testcase).setup_case(testcase);
+      }
+    }
+    static void teardown_case(yr_test_case_t testcase) {
+      if constexpr ( has_teardown_case<CtxCls>::value ) {
+        get_suite_ctx(testcase).teardown_case(testcase);
+      }
+    }
+
+  public:
+    static CtxCls &get_suite_ctx(yr_test_case_t testcase) {
+      return *static_cast<CtxCls *>(testcase->suite->refcon);
+    }
+
+    static constexpr yr_suite_lifecycle_callbacks callbacks = {
+      .setup_case = setup_case,
+      .teardown_case = teardown_case,
+      .setup_suite = setup_suite,
+      .teardown_suite = teardown_suite
+    };
+  };
+}
+
+#endif // __cplusplus
 
 #if YACHTROCK_DLOPEN
 
