@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <sys/resource.h>
 
 #include "multiprocess_tests.h"
 
@@ -274,7 +275,8 @@ static void fork_subprocess_and_abort(yr_test_case_t testcase)
     static char * const argv[] = {
       "/bin/sh",
       "-c",
-      "sleep 3600"
+      "sleep 3600",
+      NULL
     };
     execv(argv[0], argv);
   } else {
@@ -486,12 +488,32 @@ static void do_test_abort_with_forked_subprocess(yr_test_case_t tc)
   free(collection);
 }
 
-static void suite_setup_suspend_inferiority(yr_test_suite_t suite)
+static void suite_setup_suspend_inferiority_no_cores(yr_test_suite_t suite)
 {
+  struct rlimit *core = malloc(sizeof(struct rlimit));
+  assert(core);
+  if ( getrlimit(RLIMIT_CORE, core) == 0 ) {
+    suite->refcon = core;
+    struct rlimit newcore = *core;
+    newcore.rlim_cur = 0;
+    if ( setrlimit(RLIMIT_CORE, &newcore) < 0 ) {
+      perror("setrlimit (set no cores)");
+    }
+  } else {
+    perror("getrlimit");
+  }
   yr_suspend_inferiority();
 }
-static void suite_teardown_reset_inferiority(yr_test_suite_t suite)
+static void suite_teardown_reset_inferiority_reset_cores(yr_test_suite_t suite)
 {
+  if ( suite->refcon != NULL ) {
+    struct rlimit *oldlimit = suite->refcon;
+    if ( setrlimit(RLIMIT_CORE, oldlimit) < 0 ) {
+      perror("setrlimit (restore cores)");
+    }
+    free(suite->refcon);
+    suite->refcon = NULL;
+  }
   yr_reset_inferiority();
 }
 
@@ -531,8 +553,8 @@ static void do_test_big_collections(yr_test_case_t testcase)
 yr_test_suite_t yr_create_multiprocess_suite(void)
 {
   struct yr_suite_lifecycle_callbacks callbacks = {0};
-  callbacks.setup_suite = suite_setup_suspend_inferiority;
-  callbacks.teardown_suite = suite_teardown_reset_inferiority;
+  callbacks.setup_suite = suite_setup_suspend_inferiority_no_cores;
+  callbacks.teardown_suite = suite_teardown_reset_inferiority_reset_cores;
 
   struct multiprocess_testcase {
     void (*testcase)(yr_test_case_t testcase);
