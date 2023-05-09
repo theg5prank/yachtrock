@@ -99,12 +99,22 @@ add_dl_links()
     fi
 }
 
+add_curses_links()
+{
+    if [ $uname_s = Linux ]; then
+        append_element_to_quoted_array "$1" "$2" "-lncursesw"
+    else
+        append_element_to_quoted_array "$1" "$2" "-lncurses"
+    fi
+}
+
 driver=cc
 dynamic_install_name=""
 link_prefix=""
 uses_stdthreads=false
 uses_sockets=false
 uses_dl=false
+uses_curses=false
 
 #parse script options.
 while true; do
@@ -126,6 +136,9 @@ while true; do
             ;;
         --dl)
             uses_dl=true
+            ;;
+        --curses)
+            uses_curses=true
             ;;
         --)
             shift
@@ -164,6 +177,10 @@ fi
 
 if $uses_dl; then
     add_dl_links linker_arglist "${linker_arglist}"
+fi
+
+if $uses_curses; then
+    add_curses_links linker_arglist "${linker_arglist}"
 fi
 
 # iterate argument list looking for -L flags.

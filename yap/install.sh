@@ -52,7 +52,10 @@ main_sane ()
        set -- "-m" "$mode" "$@"
     fi
     if [ $verbose != 0 ]; then
-        set -- "-v" "$@"
+        # Not all BSD install(1) implementations support verbose mode. For now special case NetBSD.
+        if ! [ "$is_netbsd" = 1 ] ; then
+            set -- "-v" "$@"
+        fi
     fi
     invoke_install "$@"
     exit $?
@@ -132,7 +135,17 @@ elif [ $op = file ]; then
     fi
 fi
 
-if uname | grep SunOS > /dev/null ; then
+case `uname` in
+    *SunOS*)
+        is_sunos=1
+        ;;
+    *NetBSD*)
+        is_netbsd=1
+        ;;
+esac
+
+
+if [ "$is_sunos" = 1 ] ; then
     main_sunos "$@"
 else
     main_sane "$@"
