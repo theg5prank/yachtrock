@@ -1,3 +1,5 @@
+#define _NETBSD_SOURCE 1
+
 #include <yachtrock/script_helpers.h>
 
 #if YACHTROCK_HAS_SCRIPT_HELPERS
@@ -8,6 +10,7 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "yrtests.h"
 
