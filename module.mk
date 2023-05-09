@@ -26,7 +26,7 @@ all: $(LIBYACHTROCK_DYLIBNAME)
 
 ifeq ($(YACHTROCK_DLOPEN),1)
 all: $(YR_RUNTESTS)
-install: install_yr_runtests
+dstroot_install: dstroot_install_yr_runtests
 endif
 
 clean: clean_libyachtrock
@@ -42,7 +42,7 @@ YR_RUNTESTS_SRC := yr_runtests.c
 YR_RUNTESTS_SRC := $(patsubst %,$(LIBYACHTROCK_DIR)src/%,$(YR_RUNTESTS_SRC))
 LIBYACHTROCK_SRC := $(LIBYACHTROCK_STATIC_SRC) $(LIBYACHTROCK_GENERATED_SRC)
 LIBYACHTROCK_HEADER_SOURCES := $(wildcard $(LIBYACHTROCK_DIR)public_headers/yachtrock/*.h)
-LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers,$(PREFIX)/include,$(LIBYACHTROCK_HEADER_SOURCES))
+LIBYACHTROCK_HEADER_INSTALLED_FILES := $(subst $(LIBYACHTROCK_DIR)public_headers,$(DSTROOT_AND_PREFIX)/include,$(LIBYACHTROCK_HEADER_SOURCES))
 
 CSRC += $(LIBYACHTROCK_SRC) $(YR_RUNTESTS_SRC)
 LIBYACHTROCK_OBJ = $(patsubst %.c,%.o,$(filter %.c,$(LIBYACHTROCK_SRC)))
@@ -72,29 +72,29 @@ clean_libyachtrock:
 	rm -f $(YACHTROCK_GENERATED_HEADERS)
 	$(LIBYACHTROCK_DIR)detect_base_config.sh --clean
 
-install: install_libyachtrock_dylib install_libyachtrock_headers
+dstroot_install: dstroot_install_libyachtrock_dylib dstroot_install_libyachtrock_headers
 
-install_yr_runtests: $(PREFIX)/bin/$(YR_RUNTESTS)
+dstroot_install_yr_runtests: $(DSTROOT_AND_PREFIX)/bin/$(YR_RUNTESTS)
 
-$(PREFIX)/bin/$(YR_RUNTESTS): $(YR_RUNTESTS) $(PREFIX)/bin
-	$(YAP_INSTALL) -m 0755 -vc $< $(PREFIX)/bin
+$(DSTROOT_AND_PREFIX)/bin/$(YR_RUNTESTS): $(YR_RUNTESTS) $(DSTROOT_AND_PREFIX)/bin
+	$(YAP_INSTALL) -m 0755 -vc $< $(DSTROOT_AND_PREFIX)/bin
 
-install_libyachtrock_dylib: $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
+dstroot_install_libyachtrock_dylib: $(DSTROOT_AND_PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
 
-$(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_DYLIBNAME) $(PREFIX)/lib
-	$(YAP_INSTALL) -vc $< $(PREFIX)/lib
+$(DSTROOT_AND_PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME): $(LIBYACHTROCK_DYLIBNAME) $(DSTROOT_AND_PREFIX)/lib
+	$(YAP_INSTALL) -vc $< $(DSTROOT_AND_PREFIX)/lib
 
-install_libyachtrock_headers: libyachtrock_headers_installation_dir libyachtrock_installed_headers
+dstroot_install_libyachtrock_headers: libyachtrock_headers_installation_dir libyachtrock_installed_headers
 
-libyachtrock_headers_installation_dir: $(PREFIX)/include/yachtrock
+libyachtrock_headers_installation_dir: $(DSTROOT_AND_PREFIX)/include/yachtrock
 
-$(PREFIX)/include/yachtrock:
-	$(YAP_INSTALL) -dv $(PREFIX)/include/yachtrock
+$(DSTROOT_AND_PREFIX)/include/yachtrock:
+	$(YAP_INSTALL) -dv $(DSTROOT_AND_PREFIX)/include/yachtrock
 
 libyachtrock_installed_headers: $(LIBYACHTROCK_HEADER_INSTALLED_FILES)
 
-$(PREFIX)/include/yachtrock/%.h: $(LIBYACHTROCK_DIR)public_headers/yachtrock/%.h
-	$(YAP_INSTALL) -m 0644 -vc $< $(PREFIX)/include/yachtrock
+$(DSTROOT_AND_PREFIX)/include/yachtrock/%.h: $(LIBYACHTROCK_DIR)public_headers/yachtrock/%.h
+	$(YAP_INSTALL) -m 0644 -vc $< $(DSTROOT_AND_PREFIX)/include/yachtrock
 
 libyachtrock_install_dev_dylib_links: $(PREFIX)/lib
 	ln -s `pwd`/$(LIBYACHTROCK $(PREFIX)/lib/$(LIBYACHTROCK_DYLIBNAME)
